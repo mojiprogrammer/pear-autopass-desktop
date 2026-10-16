@@ -1,0 +1,417 @@
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="theme-color"
+      content="#111318"
+    />
+    <title>Hello Pear AutoPass</title>
+
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family:
+          Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: #111318;
+        color: #f1f2f6;
+        font-synthesis: none;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        min-width: 680px;
+        min-height: 100vh;
+        margin: 0;
+        background:
+          radial-gradient(ellipse at 10% 0%, #202b3b 0%, transparent 42%),
+          #111318;
+      }
+
+      button,
+      input {
+        font: inherit;
+      }
+
+      .app {
+        display: grid;
+        grid-template-columns: 220px minmax(0, 1fr);
+        min-height: 100vh;
+      }
+
+      .sidebar {
+        display: flex;
+        flex-direction: column;
+        padding: 28px 18px;
+        border-right: 1px solid #292c35;
+        background: rgb(17 19 24 / 85%);
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 46px;
+        font-size: 18px;
+        font-weight: 700;
+        letter-spacing: -0.5px;
+      }
+
+      .brand-mark {
+        display: grid;
+        width: 38px;
+        height: 38px;
+        place-items: center;
+        border: 1px solid #3f816c;
+        border-radius: 12px;
+        background: #193d34;
+        color: #8ee3c3;
+        font-size: 21px;
+      }
+
+      .eyebrow {
+        margin: 0 0 12px;
+        color: #777f91;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 1.7px;
+        text-transform: uppercase;
+      }
+
+      .nav-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px;
+        border-radius: 9px;
+        color: #9da4b4;
+        font-size: 13px;
+      }
+
+      .nav-item.active {
+        background: #222a32;
+        color: #a1edcf;
+      }
+
+      .nav-icon {
+        width: 20px;
+        text-align: center;
+      }
+
+      .sidebar-bottom {
+        margin-top: auto;
+        padding: 15px 12px;
+        border: 1px solid #2d323c;
+        border-radius: 12px;
+        background: #191c23;
+      }
+
+      .connection {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 9px;
+        color: #b7c2c1;
+        font-size: 12px;
+      }
+
+      .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #e4b66c;
+      }
+
+      .sidebar-hint {
+        margin: 0;
+        color: #737c8d;
+        font-size: 11px;
+        line-height: 1.6;
+      }
+
+      .main {
+        min-width: 0;
+        padding: 38px clamp(24px, 5vw, 64px);
+      }
+
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 48px;
+      }
+
+      .breadcrumb {
+        color: #838b9b;
+        font-size: 12px;
+      }
+
+      .local-badge {
+        padding: 8px 11px;
+        border: 1px solid #343944;
+        border-radius: 8px;
+        color: #aab1c0;
+        font-size: 11px;
+      }
+
+      .local-badge span {
+        margin-right: 7px;
+        color: #8ee3c3;
+      }
+
+      .heading {
+        margin: 0;
+        font-size: clamp(27px, 3vw, 36px);
+        font-weight: 650;
+        letter-spacing: -1.2px;
+      }
+
+      .subtitle {
+        margin: 12px 0 28px;
+        color: #969eae;
+        font-size: 13px;
+        line-height: 1.7;
+      }
+
+      .toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 24px;
+      }
+
+      .search {
+        width: min(320px, 60%);
+        padding: 12px 14px;
+        border: 1px solid #303541;
+        border-radius: 9px;
+        outline: none;
+        background: #191c23;
+        color: #f1f2f6;
+        font-size: 12px;
+      }
+
+      .search:focus {
+        border-color: #5b9c83;
+      }
+
+      .primary-btn {
+        padding: 12px 16px;
+        border: 1px solid #9ae9c9;
+        border-radius: 9px;
+        background: #9ae9c9;
+        color: #14251f;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .primary-btn:hover {
+        background: #b2f4d9;
+      }
+
+      .section-label {
+        margin: 0 0 12px;
+        color: #858d9e;
+        font-size: 11px;
+        font-weight: 650;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+      }
+
+      .entries {
+        overflow: hidden;
+        border: 1px solid #2d323c;
+        border-radius: 12px;
+        background: rgb(25 28 35 / 88%);
+      }
+
+      .entry {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 17px 18px;
+        border-bottom: 1px solid #2b3039;
+      }
+
+      .entry:last-child {
+        border-bottom: 0;
+      }
+
+      .entry-icon {
+        display: grid;
+        flex: 0 0 40px;
+        width: 40px;
+        height: 40px;
+        place-items: center;
+        border: 1px solid #343b47;
+        border-radius: 11px;
+        background: #232832;
+        font-size: 17px;
+      }
+
+      .entry-info {
+        min-width: 0;
+        flex: 1;
+      }
+
+      .entry-title {
+        margin: 0 0 6px;
+        font-size: 13px;
+        font-weight: 600;
+      }
+
+      .entry-description {
+        margin: 0;
+        overflow: hidden;
+        color: #858d9e;
+        font-size: 11px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .entry-tag {
+        padding: 6px 8px;
+        border: 1px solid #34443e;
+        border-radius: 6px;
+        color: #9bd9be;
+        font-size: 10px;
+      }
+
+      .empty-state {
+        padding: 32px 20px;
+        color: #929aab;
+        font-size: 12px;
+        line-height: 1.7;
+        text-align: center;
+      }
+
+      .footer-note {
+        margin-top: 24px;
+        color: #717989;
+        font-size: 11px;
+        line-height: 1.7;
+      }
+
+      @media (max-width: 760px) {
+        .app {
+          grid-template-columns: 175px minmax(0, 1fr);
+        }
+
+        .sidebar {
+          padding: 22px 12px;
+        }
+
+        .main {
+          padding: 28px 20px;
+        }
+
+        .entry-tag {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="app">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark">◇</div>
+          <span>Pear AutoPass</span>
+        </div>
+
+        <p class="eyebrow">Workspace</p>
+
+        <div class="nav-item active">
+          <span class="nav-icon">▦</span>
+          <span>My vault</span>
+        </div>
+
+        <div class="nav-item">
+          <span class="nav-icon">↗</span>
+          <span>Activity</span>
+        </div>
+
+        <div class="nav-item">
+          <span class="nav-icon">⚙</span>
+          <span>Settings</span>
+        </div>
+
+        <div class="sidebar-bottom">
+          <div class="connection">
+            <span class="status-dot"></span>
+            <span id="connection-label">Initializing storage</span>
+          </div>
+          <p class="sidebar-hint">
+            Your vault is designed for local-first data management.
+          </p>
+        </div>
+      </aside>
+
+      <main class="main">
+        <header class="topbar">
+          <span class="breadcrumb">Workspace / My vault</span>
+          <span class="local-badge"><span>●</span> Desktop workspace</span>
+        </header>
+
+        <section>
+          <p class="eyebrow">Personal workspace</p>
+          <h1 class="heading">Your data, your space.</h1>
+          <p class="subtitle">
+            Manage your vault entries in one focused workspace.
+            Simple, private, and built for desktop.
+          </p>
+        </section>
+
+        <section class="toolbar">
+          <input
+            id="search-input"
+            class="search"
+            type="search"
+            placeholder="Search your vault..."
+            aria-label="Search vault entries"
+          />
+          <button id="add-entry-btn" class="primary-btn" type="button">
+            + Add entry
+          </button>
+        </section>
+
+        <section>
+          <h2 class="section-label">Your entries</h2>
+
+          <div class="entries" id="entries-list">
+            <div class="empty-state">
+              <div style="font-size: 26px; margin-bottom: 8px">◇</div>
+              <div id="v">Preparing your vault...</div>
+              <p>
+                Your saved entries will appear here when storage is connected.
+              </p>
+              <button
+                id="update-btn"
+                type="button"
+                style="display: none"
+              >
+                Apply update
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <p class="footer-note">
+          Pear AutoPass Desktop · A local-first desktop experience<br />
+          Storage connection status will appear in the sidebar.
+        </p>
+      </main>
+    </div>
+
+    <script type="module" src="app.js"></script>
+  </body>
+</html>
