@@ -114,8 +114,10 @@ function getWorker(specifier) {
 
 async function createWindow() {
   const win = new BrowserWindow({
-    width: 800,
-    height: 600,
+    width: 1100,
+    height: 750,
+    minWidth: 1000,
+    minHeight: 650,
     webPreferences: {
       preload: path.join(__dirname, '..', 'electron', 'preload.js'),
       sandbox: true,
