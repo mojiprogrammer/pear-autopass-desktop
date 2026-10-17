@@ -7,7 +7,7 @@
   "license": "",
   "author": "",
   "type": "commonjs",
-  "main": "electron/main.js",
+  "main": "src/electron/main.js",
   "private": true,
   "scripts": {
     "lint": "prettier --check . && lunte",

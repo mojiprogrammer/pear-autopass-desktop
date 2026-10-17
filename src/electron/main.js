@@ -6,7 +6,7 @@ const FramedStream = require('framed-stream')
 
 const { isMac, isLinux, isWindows } = require('which-runtime')
 const { command, flag } = require('paparam')
-const pkg = require('../package.json')
+const pkg = require('../../package.json')
 const { name, productName, version, upgrade } = pkg
 
 const protocol = name
