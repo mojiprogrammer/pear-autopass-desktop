@@ -1,0 +1,66 @@
+# Flatpak manifest for Pear AutoPass Desktop
+
+id: io.pears.autopass
+
+runtime: org.freedesktop.Platform
+runtime-version: '25.08'
+
+sdk: org.freedesktop.Sdk
+
+base: org.electronjs.Electron2.BaseApp
+base-version: '25.08'
+
+# Must match the launcher installed in /app/bin
+command: io.pears.autopass
+
+separate-locales: false
+
+finish-args:
+  - --share=ipc
+  - --share=network
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --device=dri
+  - --env=XCURSOR_PATH=/run/host/user-share/icons:/run/host/share/icons
+
+modules:
+  - name: pear-autopass-desktop
+    buildsystem: simple
+
+    build-commands:
+      # Install AppStream application metadata
+      - install -Dm644 io.pears.autopass.metainfo.xml -t /app/share/metainfo/
+
+      # Install the desktop launcher
+      - install -Dm644 flatpak/io.pears.autopass.desktop -t /app/share/applications/
+
+      # Install the application icon
+      - install -Dm644 flatpak/io.pears.autopass.png -t /app/share/icons/hicolor/128x128/apps/
+
+      # Install the launcher script
+      - install -Dm755 flatpak/entrypoint.sh /app/bin/io.pears.autopass
+
+      # Install packaged application files
+      - mkdir -p /app/lib/io.pears.autopass
+      - cp -r ./pear-autopass-desktop-*/* /app/lib/io.pears.autopass/
+
+    sources:
+      # ARM64 Linux package
+      - type: archive
+        url: https://github.com/YOUR_USERNAME/pear-autopass-desktop/releases/download/v1.0.0/pear-autopass-desktop-1.0.0-linux-arm64-flatpak.tar.gz
+        only-arches:
+          - aarch64
+        strip-components: 0
+        sha512: REPLACE_WITH_ACTUAL_ARM64_SHA512
+
+      # x86_64 Linux package
+      - type: archive
+        url: https://github.com/YOUR_USERNAME/pear-autopass-desktop/releases/download/v1.0.0/pear-autopass-desktop-1.0.0-linux-x64-flatpak.tar.gz
+        only-arches:
+          - x86_64
+        strip-components: 0
+        sha512: REPLACE_WITH_ACTUAL_X64_SHA512
+
+      # AppStream metadata file
+      - type: file
+        path: io.pears.autopass.metainfo.xml

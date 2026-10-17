@@ -1,0 +1,49 @@
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.pears.auto-pass</id>
+
+  <name>Pear AutoPass Desktop</name>
+  <summary>Manage personal data with local-first storage</summary>
+
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+
+  <developer>
+    <name>Pear AutoPass</name>
+  </developer>
+
+  <content_rating type="oars-1.1"/>
+
+  <url type="homepage">https://github.com/mojiprogrammer/pear-autopass-desktop</url>
+  <url type="bugtracker">https://github.com/mojiprogrammer/pear-autopass-desktop/issues</url>
+
+  <releases>
+    <release version="1.0.0" date="2026-10-17"/>
+  </releases>
+
+  <recommends>
+    <display_length compare="ge">600</display_length>
+  </recommends>
+
+  <supports>
+    <control>pointing</control>
+    <control>keyboard</control>
+    <control>touch</control>
+  </supports>
+
+  <description>
+    <p>
+      Pear AutoPass Desktop is a cross-platform desktop application
+      built with Electron and Pear. It provides an interface for
+      managing personal data entries using local-first storage.
+    </p>
+    <p>
+      The application is designed to support adding, viewing,
+      removing, and tracking updates to entries.
+    </p>
+  </description>
+
+  <launchable type="desktop-id">io.pears.autopass.desktop</launchable>
+</component>
+```

@@ -1,0 +1,952 @@
+
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#111318" />
+    <meta
+      name="description"
+      content="PeerVault — a calm, private desktop workspace for your notes and knowledge."
+    />
+    <title>PeerVault — Your Private Workspace</title>
+
+    <script>
+      (() => {
+        try {
+          const savedTheme = sessionStorage.getItem("peervault-theme");
+          if (savedTheme === "light" || savedTheme === "dark") {
+            document.documentElement.dataset.theme = savedTheme;
+          }
+        } catch {
+          // Use dark theme if session storage is unavailable.
+        }
+      })();
+    </script>
+
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          sans-serif;
+        font-synthesis: none;
+        text-rendering: optimizeLegibility;
+
+        --bg: #111318;
+        --surface: #191c23;
+        --surface-hover: #232832;
+        --border: #2b303a;
+        --text: #eeeff4;
+        --muted: #9299aa;
+        --subtle-text: #858d9e;
+        --accent: #a6e8cb;
+        --accent-dark: #193a30;
+        --sidebar-bg: rgb(17 19 24 / 90%);
+        --panel-bg: rgb(25 28 35 / 92%);
+        --active-bg: #222a30;
+        --input-bg: #191c23;
+        --badge-bg: #191c23;
+        --shadow: 0 12px 36px rgb(0 0 0 / 12%);
+        --focus-ring: rgb(166 232 203 / 22%);
+      }
+
+      :root[data-theme="light"] {
+        color-scheme: light;
+
+        --bg: #f6f7f5;
+        --surface: #ffffff;
+        --surface-hover: #f0f3f0;
+        --border: #e1e6e0;
+        --text: #202820;
+        --muted: #737d75;
+        --subtle-text: #737d75;
+        --accent: #287858;
+        --accent-dark: #e2f2e9;
+        --sidebar-bg: rgb(251 252 250 / 96%);
+        --panel-bg: #ffffff;
+        --active-bg: #e8f3ed;
+        --input-bg: #ffffff;
+        --badge-bg: #ffffff;
+        --shadow: 0 12px 36px rgb(30 50 35 / 5%);
+        --focus-ring: rgb(40 120 88 / 15%);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        min-height: 100%;
+        background: var(--bg);
+        scroll-behavior: smooth;
+      }
+
+      body {
+        min-width: 0;
+        min-height: 100vh;
+        margin: 0;
+        background:
+          radial-gradient(
+            ellipse at 75% -15%,
+            rgb(65 93 83 / 14%),
+            transparent 45%
+          ),
+          var(--bg);
+        color: var(--text);
+        transition:
+          background-color 220ms ease,
+          color 220ms ease;
+      }
+
+      button,
+      input {
+        font: inherit;
+      }
+
+      button {
+        cursor: pointer;
+      }
+
+      button:focus-visible,
+      input:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 3px;
+      }
+
+      button:disabled {
+        cursor: not-allowed;
+        opacity: 0.65;
+      }
+
+      ::selection {
+        background: var(--accent);
+        color: var(--bg);
+      }
+
+      /* App layout */
+
+      .app-shell {
+        display: grid;
+        grid-template-columns: 238px minmax(0, 1fr);
+        min-height: 100vh;
+      }
+
+      /* Sidebar */
+
+      .sidebar {
+        position: sticky;
+        top: 0;
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+        padding: 26px 16px 18px;
+        border-right: 1px solid var(--border);
+        background: var(--sidebar-bg);
+        transition:
+          background-color 220ms ease,
+          border-color 220ms ease;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        padding: 0 9px;
+        margin-bottom: 38px;
+      }
+
+      .brand-mark {
+        display: grid;
+        width: 39px;
+        height: 39px;
+        flex: 0 0 39px;
+        place-items: center;
+        border: 1px solid #3d6657;
+        border-radius: 13px;
+        background: var(--accent-dark);
+        color: var(--accent);
+        font-size: 24px;
+        transition:
+          transform 220ms ease,
+          background-color 220ms ease;
+      }
+
+      .brand-mark:hover {
+        transform: rotate(-8deg);
+      }
+
+      .brand-copy {
+        min-width: 0;
+      }
+
+      .brand-name {
+        margin: 0;
+        color: var(--text);
+        font-size: 15px;
+        font-weight: 700;
+        letter-spacing: -0.4px;
+      }
+
+      .brand-caption {
+        margin: 4px 0 0;
+        color: var(--muted);
+        font-size: 10px;
+      }
+
+      .eyebrow {
+        margin: 0 0 11px;
+        padding: 0 10px;
+        color: #747d8e;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+      }
+
+      .sidebar-nav {
+        display: grid;
+        gap: 5px;
+      }
+
+      .nav-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        width: 100%;
+        padding: 11px 12px;
+        border: 1px solid transparent;
+        border-radius: 9px;
+        background: transparent;
+        color: var(--muted);
+        font-size: 12px;
+        text-align: left;
+        transition:
+          background 180ms ease,
+          color 180ms ease,
+          border-color 180ms ease,
+          transform 180ms ease;
+      }
+
+      .nav-item:hover {
+        background: var(--surface-hover);
+        color: var(--text);
+        transform: translateX(2px);
+      }
+
+      .nav-item.active {
+        border-color: var(--border);
+        background: var(--active-bg);
+        color: var(--accent);
+      }
+
+      .nav-icon {
+        display: grid;
+        width: 20px;
+        flex: 0 0 20px;
+        place-items: center;
+        font-size: 16px;
+      }
+
+      .sidebar-spacer {
+        flex: 1;
+        min-height: 30px;
+      }
+
+      .workspace-card {
+        padding: 14px 12px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--surface);
+        box-shadow: var(--shadow);
+        transition:
+          background-color 220ms ease,
+          border-color 220ms ease;
+      }
+
+      .connection {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        margin-bottom: 10px;
+        color: var(--text);
+        font-size: 11px;
+      }
+
+      .status-dot {
+        width: 8px;
+        height: 8px;
+        flex: 0 0 8px;
+        border-radius: 50%;
+        background: #e4b66c;
+        box-shadow: 0 0 0 3px rgb(228 182 108 / 10%);
+      }
+
+      .sidebar-hint {
+        margin: 0;
+        color: var(--muted);
+        font-size: 10px;
+        line-height: 1.7;
+      }
+
+      .sidebar-footer {
+        padding: 16px 8px 0;
+        color: var(--muted);
+        font-size: 10px;
+        letter-spacing: 1px;
+      }
+
+      /* Main content */
+
+      .main {
+        min-width: 0;
+        padding: 30px clamp(26px, 5vw, 68px) 36px;
+      }
+
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 52px;
+      }
+
+      .breadcrumb {
+        color: var(--muted);
+        font-size: 11px;
+      }
+
+      .topbar-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 10px;
+      }
+
+      .desktop-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 8px 10px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--badge-bg);
+        color: var(--muted);
+        font-size: 10px;
+        white-space: nowrap;
+        transition:
+          background-color 220ms ease,
+          border-color 220ms ease;
+      }
+
+      .desktop-badge-dot {
+        color: var(--accent);
+      }
+
+      /* Theme switch */
+
+      .theme-toggle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 34px;
+        padding: 0 11px;
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        background: var(--surface);
+        color: var(--text);
+        font-size: 10px;
+        white-space: nowrap;
+        transition:
+          background 180ms ease,
+          border-color 180ms ease,
+          transform 180ms ease;
+      }
+
+      .theme-toggle:hover {
+        background: var(--surface-hover);
+        transform: translateY(-1px);
+      }
+
+      .theme-toggle:active {
+        transform: translateY(0);
+      }
+
+      .theme-icon {
+        display: inline-grid;
+        width: 17px;
+        place-items: center;
+        color: var(--accent);
+        font-size: 15px;
+        transition: transform 220ms ease;
+      }
+
+      .theme-toggle:hover .theme-icon {
+        transform: rotate(18deg);
+      }
+
+      /* Page introduction */
+
+      .page-intro {
+        margin-bottom: 32px;
+      }
+
+      .page-intro .eyebrow {
+        padding: 0;
+        margin-bottom: 13px;
+        color: var(--accent);
+      }
+
+      .heading {
+        margin: 0;
+        color: var(--text);
+        font-size: clamp(28px, 3vw, 39px);
+        font-weight: 650;
+        letter-spacing: -1.5px;
+        line-height: 1.2;
+      }
+
+      .subtitle {
+        max-width: 520px;
+        margin: 13px 0 0;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.9;
+      }
+
+      /* Search and actions */
+
+      .toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        margin-bottom: 30px;
+      }
+
+      .search-wrap {
+        position: relative;
+        display: block;
+        width: min(360px, 65%);
+      }
+
+      .search-icon {
+        position: absolute;
+        top: 50%;
+        left: 13px;
+        color: var(--muted);
+        font-size: 15px;
+        pointer-events: none;
+        transform: translateY(-50%);
+      }
+
+      .search {
+        width: 100%;
+        min-height: 42px;
+        padding: 11px 13px 11px 37px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        outline: none;
+        background: var(--input-bg);
+        color: var(--text);
+        font-size: 11px;
+        transition:
+          border-color 180ms ease,
+          box-shadow 180ms ease,
+          background-color 220ms ease;
+      }
+
+      .search::placeholder {
+        color: var(--muted);
+      }
+
+      .search:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px var(--focus-ring);
+      }
+
+      .primary-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 42px;
+        padding: 0 16px;
+        border: 1px solid var(--accent);
+        border-radius: 10px;
+        background: var(--accent);
+        color: #14251f;
+        font-size: 11px;
+        font-weight: 700;
+        white-space: nowrap;
+        transition:
+          background 180ms ease,
+          border-color 180ms ease,
+          transform 180ms ease,
+          box-shadow 180ms ease;
+      }
+
+      :root[data-theme="light"] .primary-btn {
+        color: #ffffff;
+      }
+
+      .primary-btn:hover {
+        filter: brightness(1.06);
+        box-shadow: 0 4px 14px var(--focus-ring);
+        transform: translateY(-1px);
+      }
+
+      .primary-btn:active {
+        transform: translateY(0);
+      }
+
+      /* Entry section */
+
+      .section-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 13px;
+      }
+
+      .section-label {
+        margin: 0;
+        color: var(--subtle-text);
+        font-size: 11px;
+        font-weight: 650;
+        letter-spacing: 0.8px;
+        text-transform: uppercase;
+      }
+
+      .section-caption {
+        color: var(--muted);
+        font-size: 10px;
+      }
+
+      .entries {
+        overflow: hidden;
+        border: 1px solid var(--border);
+        border-radius: 13px;
+        background: var(--panel-bg);
+        box-shadow: var(--shadow);
+        transition:
+          background-color 220ms ease,
+          border-color 220ms ease,
+          box-shadow 220ms ease;
+      }
+
+      .empty-state {
+        padding: 46px 22px;
+        color: var(--muted);
+        font-size: 11px;
+        line-height: 1.8;
+        text-align: center;
+      }
+
+      .empty-icon {
+        display: grid;
+        width: 52px;
+        height: 52px;
+        place-items: center;
+        margin: 0 auto 17px;
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        background: var(--accent-dark);
+        color: var(--accent);
+        font-size: 25px;
+        transition:
+          transform 220ms ease,
+          background-color 220ms ease;
+      }
+
+      .empty-icon:hover {
+        transform: translateY(-3px) rotate(-4deg);
+      }
+
+      .empty-title {
+        margin: 0 0 6px;
+        color: var(--text);
+        font-size: 14px;
+        font-weight: 600;
+      }
+
+      .empty-description {
+        max-width: 310px;
+        margin: 8px auto 0;
+        color: var(--muted);
+      }
+
+      #v {
+        color: var(--text);
+      }
+
+      #update-btn {
+        margin-top: 18px;
+        padding: 9px 13px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--active-bg);
+        color: var(--accent);
+        font-size: 11px;
+        transition:
+          background 180ms ease,
+          transform 180ms ease;
+      }
+
+      #update-btn:hover:not(:disabled) {
+        transform: translateY(-1px);
+      }
+
+      .footer-note {
+        margin-top: 24px;
+        color: var(--muted);
+        font-size: 10px;
+        line-height: 1.8;
+      }
+
+      /* Subtle entrance animations */
+
+      @keyframes fade-in-up {
+        from {
+          opacity: 0;
+          transform: translateY(9px);
+        }
+
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes fade-in {
+        from {
+          opacity: 0;
+        }
+
+        to {
+          opacity: 1;
+        }
+      }
+
+      .sidebar {
+        animation: fade-in 350ms ease-out both;
+      }
+
+      .page-intro {
+        animation: fade-in-up 420ms ease-out both;
+      }
+
+      .toolbar {
+        animation: fade-in-up 480ms ease-out both;
+      }
+
+      .entries {
+        animation: fade-in-up 540ms ease-out both;
+      }
+
+      .footer-note {
+        animation: fade-in 650ms ease-out both;
+      }
+
+      /* Responsive layout */
+
+      @media (max-width: 850px) {
+        .app-shell {
+          grid-template-columns: 195px minmax(0, 1fr);
+        }
+
+        .sidebar {
+          padding-right: 12px;
+          padding-left: 12px;
+        }
+
+        .main {
+          padding-right: 24px;
+          padding-left: 24px;
+        }
+
+        .topbar {
+          align-items: flex-start;
+          margin-bottom: 38px;
+        }
+
+        .topbar-actions {
+          flex-wrap: wrap;
+        }
+
+        .desktop-badge {
+          display: none;
+        }
+      }
+
+      @media (max-width: 700px) {
+        .app-shell {
+          grid-template-columns: 68px minmax(0, 1fr);
+        }
+
+        .sidebar {
+          align-items: center;
+          padding: 20px 8px;
+        }
+
+        .brand {
+          padding: 0;
+          margin-bottom: 34px;
+        }
+
+        .brand-copy,
+        .sidebar .eyebrow,
+        .nav-label,
+        .workspace-card,
+        .sidebar-footer {
+          display: none;
+        }
+
+        .nav-item {
+          justify-content: center;
+          padding: 12px 8px;
+        }
+
+        .main {
+          padding: 25px 18px;
+        }
+
+        .topbar {
+          gap: 10px;
+          margin-bottom: 34px;
+        }
+
+        .topbar-actions {
+          gap: 6px;
+        }
+
+        .theme-toggle {
+          padding: 0 9px;
+        }
+
+        .toolbar {
+          align-items: stretch;
+          flex-direction: column;
+        }
+
+        .search-wrap {
+          width: 100%;
+        }
+
+        .primary-btn {
+          align-self: flex-start;
+        }
+
+        .section-caption {
+          display: none;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          scroll-behavior: auto !important;
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Main navigation">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true">◇</div>
+          <div class="brand-copy">
+            <p class="brand-name">PeerVault</p>
+            <p class="brand-caption">Your private workspace</p>
+          </div>
+        </div>
+
+        <p class="eyebrow">Workspace</p>
+
+        <nav class="sidebar-nav" aria-label="Workspace">
+          <button
+            class="nav-item active"
+            type="button"
+            aria-current="page"
+          >
+            <span class="nav-icon" aria-hidden="true">▦</span>
+            <span class="nav-label">My vault</span>
+          </button>
+
+          <button class="nav-item" type="button">
+            <span class="nav-icon" aria-hidden="true">↗</span>
+            <span class="nav-label">Activity</span>
+          </button>
+
+          <button class="nav-item" type="button">
+            <span class="nav-icon" aria-hidden="true">⚙</span>
+            <span class="nav-label">Settings</span>
+          </button>
+        </nav>
+
+        <div class="sidebar-spacer"></div>
+
+        <section class="workspace-card" aria-label="Storage status">
+          <div class="connection" role="status" aria-live="polite">
+            <span class="status-dot" aria-hidden="true"></span>
+            <span id="connection-label">Initializing storage</span>
+          </div>
+
+          <p class="sidebar-hint">
+            Your workspace is designed around local-first data management.
+          </p>
+        </section>
+
+        <div class="sidebar-footer">PEERVAULT DESKTOP</div>
+      </aside>
+
+      <main class="main">
+        <header class="topbar">
+          <span class="breadcrumb">Workspace / My vault</span>
+
+          <div class="topbar-actions">
+            <button
+              id="theme-toggle"
+              class="theme-toggle"
+              type="button"
+              aria-label="Switch to light theme"
+              title="Switch theme"
+            >
+              <span id="theme-icon" class="theme-icon" aria-hidden="true">☀</span>
+              <span id="theme-label">Light mode</span>
+            </button>
+
+            <span class="desktop-badge">
+              <span class="desktop-badge-dot" aria-hidden="true">●</span>
+              Desktop workspace
+            </span>
+          </div>
+        </header>
+
+        <section class="page-intro" aria-labelledby="page-title">
+          <p class="eyebrow">PERSONAL KNOWLEDGE SPACE</p>
+
+          <h1 class="heading" id="page-title">
+            A quieter place for your ideas.
+          </h1>
+
+          <p class="subtitle">
+            Keep your notes and important information organized in one focused
+            workspace. Simple by design, with a local-first foundation.
+          </p>
+        </section>
+
+        <section class="toolbar" aria-label="Vault actions">
+          <label class="search-wrap">
+            <span class="search-icon" aria-hidden="true">⌕</span>
+
+            <input
+              id="search-input"
+              class="search"
+              type="search"
+              placeholder="Search your vault..."
+              aria-label="Search vault entries"
+            />
+          </label>
+
+          <button id="add-entry-btn" class="primary-btn" type="button">
+            <span aria-hidden="true">＋</span>
+            Add entry
+          </button>
+        </section>
+
+        <section aria-labelledby="entries-heading">
+          <div class="section-heading">
+            <h2 class="section-label" id="entries-heading">Your entries</h2>
+            <span class="section-caption">Your personal collection</span>
+          </div>
+
+          <div class="entries" id="entries-list">
+            <div class="empty-state">
+              <div class="empty-icon" aria-hidden="true">◇</div>
+
+              <div id="v" role="status" aria-live="polite">
+                Preparing your vault...
+              </div>
+
+              <p class="empty-description">
+                Your saved entries will appear here when storage is connected.
+              </p>
+
+              <button
+                id="update-btn"
+                type="button"
+                style="display: none"
+              >
+                Apply update
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <p class="footer-note">
+          PeerVault · A focused desktop workspace<br />
+          Storage connection status appears in the sidebar.
+        </p>
+      </main>
+    </div>
+
+    <script>
+      (() => {
+        const root = document.documentElement;
+        const toggle = document.getElementById("theme-toggle");
+        const icon = document.getElementById("theme-icon");
+        const label = document.getElementById("theme-label");
+        const themeColorMeta = document.querySelector(
+          'meta[name="theme-color"]'
+        );
+
+        if (!toggle || !icon || !label) return;
+
+        let theme = root.dataset.theme === "light" ? "light" : "dark";
+
+        function applyTheme(nextTheme) {
+          theme = nextTheme;
+          root.dataset.theme = theme;
+
+          const isLight = theme === "light";
+
+          icon.textContent = isLight ? "☾" : "☀";
+          label.textContent = isLight ? "Dark mode" : "Light mode";
+
+          toggle.setAttribute(
+            "aria-label",
+            isLight ? "Switch to dark theme" : "Switch to light theme"
+          );
+
+          if (themeColorMeta) {
+            themeColorMeta.setAttribute(
+              "content",
+              isLight ? "#f6f7f5" : "#111318"
+            );
+          }
+
+          try {
+            sessionStorage.setItem("peervault-theme", theme);
+          } catch {
+            // Theme still changes if session storage is unavailable.
+          }
+        }
+
+        applyTheme(theme);
+
+        toggle.addEventListener("click", () => {
+          applyTheme(theme === "dark" ? "light" : "dark");
+        });
+      })();
+    </script>
+
+    <script type="module" src="app.js"></script>
+  </body>
+</html>
