@@ -1,121 +1,323 @@
+
 (() => {
-  const root = document.documentElement;
-  const toggle = document.getElementById("theme-toggle");
-  const searchInput = document.getElementById("search-input");
-  const rows = [...document.querySelectorAll(".activity-row")];
-  const emptyState = document.getElementById("empty-state");
-  const dialog = document.getElementById("info-dialog");
-  const dialogTitle = document.getElementById("dialog-title");
-  const dialogCopy = document.getElementById("dialog-copy");
-  const dialogOk = document.getElementById("dialog-ok");
-const themeIcon = document.getElementById("theme-icon");
+  const root = document.documentElement
+  const toggle = document.getElementById('theme-toggle')
+  const themeIcon = document.getElementById('theme-icon')
+  const searchInput = document.getElementById('search-input')
+  const emptyState = document.getElementById('empty-state')
+  const dialog = document.getElementById('info-dialog')
+  const dialogTitle = document.getElementById('dialog-title')
+  const dialogCopy = document.getElementById('dialog-copy')
+  const dialogOk = document.getElementById('dialog-ok')
+  const entriesContainer = document.getElementById('entries-list')
+
+  let entries = []
+  let searchQuery = ''
+
   function readTheme() {
-    try { return sessionStorage.getItem("peervault-theme"); } catch { return null; }
-  }
-  function saveTheme(theme) {
-    try { sessionStorage.setItem("peervault-theme", theme); } catch { /* Theme still works without storage. */ }
-  }
-  function applyTheme(theme) {
-  const dark = theme === "dark";
-
-  root.dataset.theme = dark ? "dark" : "light";
-
-  // Change the icon based on the active theme
-  if (themeIcon) {
-    themeIcon.textContent = dark ? "☾" : "☼";
-  }
-
-  if (toggle) {
-    toggle.setAttribute("aria-checked", String(!dark));
-    toggle.setAttribute(
-      "aria-label",
-      dark ? "Switch to light theme" : "Switch to dark theme"
-    );
-    toggle.title = dark ? "Switch to light theme" : "Switch to dark theme";
-  }
-
-  saveTheme(theme);
-}
-  applyTheme(readTheme() === "light" ? "light" : "dark");
-  toggle?.addEventListener("click", () => applyTheme(root.dataset.theme === "dark" ? "light" : "dark"));
-
-  searchInput?.addEventListener("input", () => {
-    const query = searchInput.value.trim().toLowerCase();
-    let count = 0;
-    rows.forEach(row => {
-      const match = row.textContent.toLowerCase().includes(query);
-      row.hidden = !match;
-      if (match) count++;
-    });
-    if (emptyState) emptyState.hidden = count !== 0;
-    const summary = document.getElementById("save-status");
-    if (summary) summary.textContent = query ? `${count} matching ${count === 1 ? "item" : "items"}` : "Your vault is up to date";
-  });
-
-  const details = {
-    project: ["Project Plan", "A sample note in your recent activity. Your real vault content should be loaded by the application layer."],
-    design: ["Design Assets", "A sample file entry. File previews and access permissions should be handled by your app."],
-    alex: ["Alex Rivera", "A sample contact in your vault. Contact information is demonstration content."],
-    team: ["Team Docs", "A sample shared item. Actual sharing depends on your peer connection and authorization."]
-  };
-  function showDialog(title, copy) {
-    if (!dialog) return;
-    dialogTitle.textContent = title;
-    dialogCopy.textContent = copy;
-    if (typeof dialog.showModal === "function") dialog.showModal();
-    else alert(`${title}\n\n${copy}`);
-  }
-  
-function setConnectionStatus(isConnected) {
-  const dot = document.getElementById("connection-dot");
-  const label = document.getElementById("connection-label");
-  const announcement = document.getElementById("v");
-
-  if (!dot || !label) return;
-
-  dot.classList.toggle("connected", isConnected);
-  dot.classList.toggle("disconnected", !isConnected);
-
-  label.textContent = isConnected
-    ? "Connected to Pear"
-    : "Disconnected";
-
-  if (announcement) {
-    announcement.textContent = isConnected
-      ? "Connected"
-      : "Disconnected";
-  }
-}
-
-// Initial visual state for your UI preview
-setConnectionStatus(true);
-
-// Example: simulate disconnection after 5 seconds
-// setTimeout(() => setConnectionStatus(false), 5000);
-
-  rows.forEach(row => row.addEventListener("click", () => {
-    const item = details[row.dataset.entry];
-    if (item) showDialog(item[0], item[1]);
-  }));
-  document.getElementById("learn-more-btn")?.addEventListener("click", () =>
-    showDialog("Your vault, your control.", "PeerVault is designed around privacy. This dashboard is a UI preview; encryption, storage, and peer permissions must be provided by your application's data layer."));
-  document.getElementById("add-entry-btn")?.addEventListener("click", () =>
-    showDialog("Create a new entry", "Connect this action to your existing app.js entry-creation workflow to save a real note, file, or secure item."));
-  document.getElementById("view-all-btn")?.addEventListener("click", () =>
-    showDialog("Recent activity", "This preview shows four sample activity items. Connect this view to your real activity feed when the data layer is ready."));
-  dialogOk?.addEventListener("click", () => dialog?.close());
-  dialog?.querySelector(".dialog-close")?.addEventListener("click", () => dialog.close());
-
-  document.querySelectorAll(".nav-item").forEach(button => button.addEventListener("click", () => {
-    document.querySelectorAll(".nav-item").forEach(item => item.classList.toggle("active", item === button));
-    const view = button.dataset.view;
-    if (view && view !== "dashboard") {
-      showDialog(button.textContent.trim(), `The ${button.textContent.trim()} view is a dashboard navigation placeholder. Connect it to your existing application routing.`);
+    try {
+      return sessionStorage.getItem('peervault-theme')
+    } catch {
+      return null
     }
-  }));
+  }
 
-  document.getElementById("update-btn")?.addEventListener("click", () => {
-    const label = document.getElementById("connection-label");
-    if (label) label.textContent = "Connection status refreshed";
-  });
-})(); 
+  function saveTheme(theme) {
+    try {
+      sessionStorage.setItem('peervault-theme', theme)
+    } catch {
+      // Theme still works without storage.
+    }
+  }
+
+  function applyTheme(theme) {
+    const dark = theme === 'dark'
+    root.dataset.theme = dark ? 'dark' : 'light'
+
+    if (themeIcon) themeIcon.textContent = dark ? '☾' : '☼'
+
+    if (toggle) {
+      toggle.setAttribute('aria-checked', String(!dark))
+      toggle.setAttribute(
+        'aria-label',
+        dark ? 'Switch to light theme' : 'Switch to dark theme'
+      )
+      toggle.title = dark ? 'Switch to light theme' : 'Switch to dark theme'
+    }
+
+    saveTheme(theme)
+  }
+
+  applyTheme(readTheme() === 'light' ? 'light' : 'dark')
+
+  toggle?.addEventListener('click', () => {
+    applyTheme(root.dataset.theme === 'dark' ? 'light' : 'dark')
+  })
+
+  function showDialog(title, copy) {
+    if (!dialog) {
+      alert(`${title}\n\n${copy}`)
+      return
+    }
+
+    if (dialogTitle) dialogTitle.textContent = title
+    if (dialogCopy) dialogCopy.textContent = copy
+
+    if (typeof dialog.showModal === 'function') {
+      dialog.showModal()
+    } else {
+      alert(`${title}\n\n${copy}`)
+    }
+  }
+
+  function setConnectionStatus(isConnected) {
+    const dot = document.getElementById('connection-dot')
+    const label = document.getElementById('connection-label')
+
+    if (dot) {
+      dot.classList.toggle('connected', isConnected)
+      dot.classList.toggle('disconnected', !isConnected)
+    }
+
+    if (label) {
+      label.textContent = isConnected ? 'Connected to Pear' : 'Disconnected'
+    }
+  }
+
+  function updateStats() {
+  const notes = document.getElementById('notes-count')
+  const files = document.getElementById('files-count')
+  const contacts = document.getElementById('contacts-count')
+  const shares = document.getElementById('shares-count')
+
+  if (notes) notes.textContent = String(entries.length)
+
+  // These categories are not yet classified by the current worker API.
+  if (files) files.textContent = '0'
+  if (contacts) contacts.textContent = '0'
+  if (shares) shares.textContent = '0'
+}
+
+  function renderEntries() {
+  if (!entriesContainer) {
+    console.error(
+      'Autopass entries container not found. ' +
+      'Expected an element with id="entries-list".'
+    )
+    updateStats()
+    return
+  }
+
+  entriesContainer.setAttribute('aria-busy', 'false')
+
+  // Clear existing rows without losing the empty-state element.
+  entriesContainer.replaceChildren()
+
+  if (emptyState) {
+    entriesContainer.append(emptyState)
+  }
+
+  // Filter entries using the current search query.
+  const filtered = entries.filter((entry) => {
+    const text = `${entry.key} ${entry.value ?? ''}`.toLowerCase()
+    return text.includes(searchQuery)
+  })
+
+  // Render each Autopass entry.
+  filtered.forEach((entry) => {
+    const row = document.createElement('button')
+    row.type = 'button'
+    row.className = 'activity-row'
+    row.dataset.entryKey = entry.key
+
+    const icon = document.createElement('span')
+    icon.className = 'activity-icon'
+    icon.textContent = '▤'
+    icon.setAttribute('aria-hidden', 'true')
+
+    const content = document.createElement('span')
+    content.className = 'activity-content'
+
+    const title = document.createElement('span')
+    title.className = 'activity-title'
+    title.textContent = entry.key
+
+    const description = document.createElement('span')
+    description.className = 'activity-description'
+    description.textContent =
+      typeof entry.value === 'string'
+        ? entry.value
+        : 'Vault entry'
+
+    content.append(title, description)
+    row.append(icon, content)
+
+    // Open the entry details when its row is clicked.
+    row.addEventListener('click', () => {
+      showDialog(
+        entry.key,
+        String(entry.value ?? 'No content available.')
+      )
+    })
+
+    // Insert rows before the empty-state element.
+    if (emptyState && entriesContainer.contains(emptyState)) {
+      entriesContainer.insertBefore(row, emptyState)
+    } else {
+      entriesContainer.append(row)
+    }
+  })
+
+  // Show the empty state only when there are no matching entries.
+  if (emptyState) {
+    emptyState.hidden = filtered.length > 0
+
+    if (filtered.length === 0) {
+      emptyState.textContent = searchQuery
+        ? 'No entries match your search.'
+        : 'Your vault is empty. Add your first entry to get started.'
+    }
+  }
+
+  // Update the status message.
+  const summary = document.getElementById('save-status')
+
+  if (summary) {
+    summary.textContent = searchQuery
+      ? `${filtered.length} matching ${
+          filtered.length === 1 ? 'item' : 'items'
+        }`
+      : `${entries.length} ${
+          entries.length === 1 ? 'entry' : 'entries'
+        } in your vault`
+  }
+
+  // Update the dashboard counters.
+  updateStats()
+}
+
+  searchInput?.addEventListener('input', () => {
+    searchQuery = searchInput.value.trim().toLowerCase()
+    renderEntries()
+  })
+
+  async function loadEntries() {
+    if (!window.autopassAPI) {
+      setConnectionStatus(false)
+      showDialog(
+        'Vault unavailable',
+        'The Autopass API was not found. Check that app.js is loaded and the worker has started.'
+      )
+      return
+    }
+
+    try {
+      await window.autopassAPI.ready()
+      entries = await window.autopassAPI.list()
+      setConnectionStatus(true)
+      renderEntries()
+    } catch (error) {
+      console.error('Failed to load vault entries:', error)
+      setConnectionStatus(false)
+
+      const summary = document.getElementById('save-status')
+      if (summary) summary.textContent = 'Could not load vault entries'
+    }
+  }
+
+  // Receive refreshed lists from app.js.
+  window.autopassAPI?.onEntriesUpdated((updatedEntries) => {
+    entries = Array.isArray(updatedEntries) ? updatedEntries : []
+    setConnectionStatus(true)
+    renderEntries()
+  })
+
+  async function addEntry() {
+    const key = prompt('Entry title:')
+    if (key === null) return
+
+    const cleanKey = key.trim()
+    if (!cleanKey) {
+      showDialog('Title required', 'Please enter a title for your vault entry.')
+      return
+    }
+
+    const value = prompt('Entry content:')
+    if (value === null) return
+
+    try {
+      await window.autopassAPI.add(cleanKey, value)
+      entries = await window.autopassAPI.list()
+      renderEntries()
+      showDialog('Entry saved', `"${cleanKey}" was saved to your vault.`)
+    } catch (error) {
+      console.error('Failed to add entry:', error)
+      showDialog('Could not save entry', error.message)
+    }
+  }
+
+  async function removeEntry(key) {
+    const confirmed = confirm(`Remove "${key}" from your vault?`)
+    if (!confirmed) return
+
+    try {
+      await window.autopassAPI.remove(key)
+      entries = await window.autopassAPI.list()
+      renderEntries()
+    } catch (error) {
+      console.error('Failed to remove entry:', error)
+      showDialog('Could not remove entry', error.message)
+    }
+  }
+
+  document.getElementById('add-entry-btn')?.addEventListener('click', () => {
+    addEntry()
+  })
+
+  document.getElementById('view-all-btn')?.addEventListener('click', () => {
+    showDialog(
+      'Your vault entries',
+      `Your vault currently contains ${entries.length} ${entries.length === 1 ? 'entry' : 'entries'}.`
+    )
+  })
+
+  document.getElementById('learn-more-btn')?.addEventListener('click', () => {
+    showDialog(
+      'Your vault, your control.',
+      'PeerVault uses Autopass for vault operations. Peer connectivity, sharing, and file permissions need their own implementation and testing.'
+    )
+  })
+
+  dialogOk?.addEventListener('click', () => dialog?.close())
+  dialog?.querySelector('.dialog-close')?.addEventListener('click', () => {
+    dialog.close()
+  })
+
+  document.querySelectorAll('.nav-item').forEach((button) => {
+    button.addEventListener('click', () => {
+      document.querySelectorAll('.nav-item').forEach((item) => {
+        item.classList.toggle('active', item === button)
+      })
+
+      const view = button.dataset.view
+
+      if (view && view !== 'dashboard') {
+        showDialog(
+          button.textContent.trim(),
+          `The ${button.textContent.trim()} view is not connected to a separate data view yet.`
+        )
+      }
+    })
+  })
+
+  document.getElementById('update-btn')?.addEventListener('click', () => {
+    loadEntries()
+  })
+
+  // Remove the static demo rows; render actual data from Autopass.
+  document.querySelectorAll('.activity-row').forEach((row) => {
+    row.remove()
+  })
+
+  loadEntries()
+})()

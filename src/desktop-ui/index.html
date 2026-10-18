@@ -1,9 +1,13 @@
+
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Pear AutoPass Desktop — a calm, private space for your peer-to-peer vault." />
+  <meta
+    name="description"
+    content="Pear AutoPass Desktop — a calm, private space for your peer-to-peer vault."
+  />
   <title>Pear AutoPass Desktop</title>
   <link rel="stylesheet" href="../assets/css/style.css" />
 </head>
@@ -11,138 +15,209 @@
   <div class="app-shell">
     <header class="topbar">
       <div class="window-controls" aria-hidden="true">
-        <span class="window-dot red"></span><span class="window-dot yellow"></span><span class="window-dot green"></span>
+        <span class="window-dot green"></span>
+        <span class="window-dot blue"></span>
+        <span class="window-dot purple"></span>
       </div>
+
       <a class="brand" href="#" aria-label="Pear AutoPass Desktop home">
-        <span class="brand-mark" aria-hidden="true"><img src="../assets/images/logo.svg" alt="" /></span>
+        <span class="brand-mark" aria-hidden="true">
+          <img src="../assets/images/logo.svg" alt="" />
+        </span>
         <span class="brand-name">Pear AutoPass</span>
       </a>
+
       <label class="global-search">
         <span class="search-icon" aria-hidden="true">⌕</span>
         <span class="visually-hidden">Search your vault</span>
-        <input id="search-input" type="search" placeholder="Search your vault..." autocomplete="off" />
-        <kbd>⌘ K</kbd>
+        <input
+          id="search-input"
+          type="search"
+          placeholder="Search your vault..."
+          autocomplete="off"
+        />
+        <kbd>Ctrl K</kbd>
       </label>
+
       <div class="topbar-actions">
-        <span class="sun-icon" id="theme-icon" aria-hidden="true">☼</span>
-        <button class="theme-switch" id="theme-toggle"
-         type="button" role="switch" aria-checked="true" aria-label="Switch to dark theme" title="Switch theme">
-         <span></span></button>
+        <span class="sun-icon" id="theme-icon" aria-hidden="true">☾</span>
+
+        <button
+          class="theme-switch"
+          id="theme-toggle"
+          type="button"
+          role="switch"
+          aria-checked="false"
+          aria-label="Switch to light theme"
+          title="Switch theme"
+        >
+          <span></span>
+        </button>
+
         <span class="topbar-divider"></span>
-        <button class="profile-avatar" type="button" aria-label="Profile">JD</button>
+
+        <button class="profile-avatar" type="button" aria-label="Profile">
+          JD
+        </button>
       </div>
     </header>
 
     <aside class="sidebar" aria-label="Main navigation">
       <nav class="nav-list">
-        <button class="nav-item active" type="button" data-view="dashboard"><span class="nav-icon">◆</span><span>Dashboard</span></button>
-        <button class="nav-item" type="button" data-view="notes"><span class="nav-icon">▤</span><span>Notes</span></button>
-        <button class="nav-item" type="button" data-view="files"><span class="nav-icon">▱</span><span>Files</span></button>
-        <button class="nav-item" type="button" data-view="contacts"><span class="nav-icon">♙</span><span>Contacts</span></button>
-        <button class="nav-item" type="button" data-view="shares"><span class="nav-icon">♧</span><span>Shares</span></button>
-        <button class="nav-item" type="button" data-view="settings"><span class="nav-icon">⚙</span><span>Settings</span></button>
+        <button
+          class="nav-item active"
+          type="button"
+          data-view="dashboard"
+        >
+          <span class="nav-icon">◆</span>
+          <span>Dashboard</span>
+        </button>
+
+        <button class="nav-item" type="button" data-view="notes">
+          <span class="nav-icon">▤</span>
+          <span>Notes</span>
+        </button>
+
+        <button class="nav-item" type="button" data-view="files">
+          <span class="nav-icon">▱</span>
+          <span>Files</span>
+        </button>
+
+        <button class="nav-item" type="button" data-view="contacts">
+          <span class="nav-icon">♙</span>
+          <span>Contacts</span>
+        </button>
+
+        <button class="nav-item" type="button" data-view="shares">
+          <span class="nav-icon">♧</span>
+          <span>Shares</span>
+        </button>
+
+        <button class="nav-item" type="button" data-view="settings">
+          <span class="nav-icon">⚙</span>
+          <span>Settings</span>
+        </button>
       </nav>
+
       <div class="sidebar-spacer"></div>
-     <section class="connection-status" aria-label="Peer connection status">
-  <span
-    class="connection-dot connected"
-    id="connection-dot"
-    aria-hidden="true">
-  </span>
 
-  <div>
-    <div class="connection-title" id="connection-label">
-      Connected to Pear
-    </div>
-  </div>
+      <section class="connection-status" aria-label="Application status">
+        <span
+          class="connection-dot disconnected"
+          id="connection-dot"
+          aria-hidden="true"
+        ></span>
 
-  <span id="v" class="visually-hidden" aria-live="polite">
-    Connected
-  </span>
-</section>
+        <div>
+          <div class="connection-title" id="connection-label">
+            Connecting...
+          </div>
+        </div>
+
+        <span
+          id="v"
+          class="visually-hidden"
+          aria-live="polite"
+        >Starting</span>
+      </section>
     </aside>
 
     <main class="dashboard">
       <section class="welcome-row">
         <div>
           <p class="eyebrow">YOUR PRIVATE WORKSPACE</p>
-          <h1 id="page-title">Good morning, Ats</h1>
+          <h1 id="page-title">Welcome to PeerVault</h1>
           <p class="welcome-subtitle">Your secure space. Your control.</p>
         </div>
-        <button class="primary-button" id="add-entry-btn" type="button"><span aria-hidden="true">＋</span> New entry</button>
+
+        <button class="primary-button" id="add-entry-btn" type="button">
+          <span aria-hidden="true">＋</span>
+          New entry
+        </button>
       </section>
 
       <section class="stats-grid" aria-label="Vault overview">
         <article class="stat-card">
           <div class="stat-icon green"><span>▤</span></div>
-          <p class="stat-label">Total Notes</p><div class="stat-number" id="notes-count">12</div>
-          <p class="stat-change positive">↑ <span>2 new</span></p>
+          <p class="stat-label">Total Notes</p>
+          <div class="stat-number" id="notes-count">0</div>
+          <p class="stat-change neutral">Autopass entries</p>
         </article>
+
         <article class="stat-card">
           <div class="stat-icon blue"><span>▱</span></div>
-          <p class="stat-label">Total Files</p><div class="stat-number" id="files-count">8</div>
-          <p class="stat-change positive">↑ <span>1 new</span></p>
+          <p class="stat-label">Total Files</p>
+          <div class="stat-number" id="files-count">0</div>
+          <p class="stat-change neutral">File entries</p>
         </article>
+
         <article class="stat-card">
           <div class="stat-icon violet"><span>♙</span></div>
-          <p class="stat-label">Contacts</p><div class="stat-number" id="contacts-count">5</div>
-          <p class="stat-change positive">↑ <span>1 new</span></p>
+          <p class="stat-label">Contacts</p>
+          <div class="stat-number" id="contacts-count">0</div>
+          <p class="stat-change neutral">Contact entries</p>
         </article>
+
         <article class="stat-card">
           <div class="stat-icon purple"><span>♧</span></div>
-          <p class="stat-label">Shares</p><div class="stat-number" id="shares-count">3</div>
-          <p class="stat-change neutral">↑ <span>0 new</span></p>
+          <p class="stat-label">Shares</p>
+          <div class="stat-number" id="shares-count">0</div>
+          <p class="stat-change neutral">Shared entries</p>
         </article>
       </section>
 
       <section class="activity-section">
         <div class="section-heading">
-          <div><p class="eyebrow">AT A GLANCE</p><h2>Recent Activity</h2></div>
-          <button class="text-button" id="view-all-btn" type="button">View all <span aria-hidden="true">→</span></button>
-        </div>
-        <div class="activity-card" id="entries-list" aria-live="polite">
-          <button class="activity-row" type="button" data-entry="project">
-            <span class="activity-icon green"><span>▤</span></span>
-            <span class="activity-copy"><strong>Project Plan</strong><small>Updated 2 hours ago</small></span><span class="activity-tag tag-note">Note</span>
-          </button>
-          <button class="activity-row" type="button" data-entry="design">
-            <span class="activity-icon purple"><span>▱</span></span>
-            <span class="activity-copy"><strong>Design Assets</strong><small>Added 4 hours ago</small></span><span class="activity-tag tag-file">File</span>
-          </button>
-          <!-- <button class="activity-row" type="button" data-entry="alex">
-            <span class="activity-icon blue"><span>♙</span></span>
-            <span class="activity-copy"><strong>Alex Rivera</strong><small>Contact added 6 hours ago</small></span><span class="activity-tag tag-contact">Contact</span>
-          </button>
-          <button class="activity-row" type="button" data-entry="team">
-            <span class="activity-icon purple"><span>♧</span></span>
-            <span class="activity-copy"><strong>Team Docs</strong><small>Shared 1 day ago</small></span><span class="activity-tag tag-share">Share</span>
-          </button> -->
-          <div class="empty-state" id="empty-state" hidden>No activity matches your search.</div>
-        </div>
-      </section>
-      <footer class="dashboard-footer"><span class="footer-dot"></span><span id="save-status">Your vault is up to date</span><span class="footer-separator">·</span><span>Private by design</span></footer>
-    </main>
+          <div>
+            <p class="eyebrow">AT A GLANCE</p>
+            <h2>Recent Activity</h2>
+          </div>
 
-    <!-- <aside class="privacy-panel">
-      <div class="privacy-card">
-        <div class="privacy-icon"><span aria-hidden="true">♙</span></div>
-        <p class="eyebrow">BUILT AROUND YOU</p>
-        <h2>Your data.<br />Encrypted.</h2>
-        <p class="privacy-copy">PeerVault keeps your notes, files and relationships private and secure. Only you control your data.</p>
-        <button class="privacy-button" id="learn-more-btn" type="button">Learn more <span aria-hidden="true">→</span></button>
-        <div class="privacy-footnote"><span class="mini-lock">◆</span> Private. Secure. Yours.</div>
-      </div>
-      <div class="privacy-decoration" aria-hidden="true"></div>
-    </aside> -->
+          <button class="text-button" id="view-all-btn" type="button">
+            View all <span aria-hidden="true">→</span>
+          </button>
+        </div>
+
+        <!-- Real Autopass entries are rendered into this container. -->
+        <div
+  class="activity-card"
+  id="entries-list"
+  aria-live="polite"
+  aria-busy="true"
+>
+  <div class="empty-state" id="empty-state" hidden>
+    Your vault is empty. Add your first entry to get started.
+  </div>
+</div>
+      </section>
+
+      <footer class="dashboard-footer">
+        <span class="footer-dot"></span>
+        <span id="save-status">Connecting to your vault...</span>
+        <span class="footer-separator">·</span>
+        <span>Private by design</span>
+      </footer>
+    </main>
   </div>
 
   <dialog id="info-dialog" class="info-dialog">
-    <form method="dialog"><button class="dialog-close" aria-label="Close">×</button></form>
-    <div class="dialog-lock">♙</div><h2 id="dialog-title">Your vault, your control.</h2>
-    <p id="dialog-copy">This dashboard is a UI preview. Keep your real vault data protected by your application's storage, encryption, and access-control layers.</p>
-    <button class="primary-button" id="dialog-ok" type="button">Got it</button>
+    <form method="dialog">
+      <button class="dialog-close" aria-label="Close">×</button>
+    </form>
+
+    <div class="dialog-lock">♙</div>
+    <h2 id="dialog-title">Your vault, your control.</h2>
+    <p id="dialog-copy">
+      Manage your entries in your private workspace.
+    </p>
+
+    <button class="primary-button" id="dialog-ok" type="button">
+      Got it
+    </button>
   </dialog>
-  <script src="../assets/js/home.js"></script>
+
+  <!-- Load the bridge API before the UI code that consumes it. -->
   <script type="module" src="app.js"></script>
+  <script type="module" src="../assets/js/home.js"></script>
 </body>
 </html>

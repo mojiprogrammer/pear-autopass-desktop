@@ -115,15 +115,25 @@ html[data-theme="dark"] .app-shell::before {
 }
 @keyframes sunrise { 0% { opacity: 0; transform: translate(0,0) scale(.7); } 20% { opacity: .9; } 100% { opacity: 0; transform: translate(-56vw,-54vh) scale(1.1); } }
 .topbar {
-  grid-column: 1 / -1; display: grid; grid-template-columns: 112px 210px minmax(180px, 1fr) 235px;
-  align-items: center; gap: 20px; padding: 0 30px; border-bottom: 1px solid var(--border);
-  background: rgb(255 255 255 / 25%); backdrop-filter: blur(24px); -webkit-app-region: drag; z-index: 2;
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 112px 210px minmax(180px, 1fr) 235px;
+  align-items: center;
+  gap: 20px;
+  padding: 0 30px;
+  border-bottom: 1px solid var(--border);
+  background: var(--sidebar);
+  backdrop-filter: blur(24px);
+  -webkit-app-region: drag;
+  z-index: 2;
 }
 
 .topbar button, .topbar input, .brand, .global-search { -webkit-app-region: no-drag; }
 .window-controls { display: flex; gap: 8px; align-items: center; }
 .window-dot { width: 13px; height: 13px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgb(0 0 0 / 5%); }
-.window-dot.red { background: #e05d55; } .window-dot.yellow { background: #e6bb42; } .window-dot.green { background: #37ad61; }
+.window-dot.purple { background: #E87979; } 
+.window-dot.blue { background: #E5BB61; } 
+.window-dot.green { background: #80C99A; }
 .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--text); }
 .brand-mark { display: grid; place-items: center; width: 29px; height: 35px; overflow: hidden; }
 .brand-mark img { width: 28px; height: 32px; object-fit: contain; }
