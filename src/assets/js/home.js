@@ -455,7 +455,7 @@
     entrySaveButton.textContent = entry ? 'Save changes' : 'Save entry'
 
     entryKeyInput.value = entry ? entry.key : ''
-    entryKeyInput.readOnly = Boolean(entry)
+    entryKeyInput.readOnly = false
     entryValueInput.value = entry ? String(entry.value ?? '') : ''
 
     if (!entryDialog.open) {
@@ -482,90 +482,129 @@
     closeEntryDialog()
   })
 
-  entryForm?.addEventListener('submit', async (event) => {
-    event.preventDefault()
+ 
+entryForm?.addEventListener('submit', async (event) => {
+  event.preventDefault()
 
-    if (isSaving) return
+  if (isSaving) return
 
-    const key = entryKeyInput.value.trim()
-    const value = entryValueInput.value
-    const wasEditing = editingEntryKey !== null
+  const newKey = entryKeyInput.value.trim()
+  const value = entryValueInput.value
+  const oldKey = editingEntryKey
+  const wasEditing = oldKey !== null
+  const titleChanged = wasEditing && newKey !== oldKey
 
-    if (!key) {
-      entryFormError.textContent = 'Please enter a title.'
-      entryFormError.hidden = false
-      entryKeyInput.focus()
-      return
-    }
+  if (!newKey) {
+    entryFormError.textContent = 'Please enter a title.'
+    entryFormError.hidden = false
+    entryKeyInput.focus()
+    return
+  }
 
-    if (!value.trim()) {
-      entryFormError.textContent = 'Please enter some content.'
-      entryFormError.hidden = false
-      entryValueInput.focus()
-      return
-    }
+  if (!value.trim()) {
+    entryFormError.textContent = 'Please enter some content.'
+    entryFormError.hidden = false
+    entryValueInput.focus()
+    return
+  }
 
-    // Prevent duplicate titles when creating a new entry.
-    if (
-      !wasEditing &&
-      entries.some((entry) => entry.key === key)
-    ) {
-      entryFormError.textContent =
-        'An entry with this title already exists. Choose another title.'
-      entryFormError.hidden = false
-      entryKeyInput.focus()
-      return
-    }
+  // Do not overwrite another entry with the same title.
+  if (
+    entries.some((entry) =>
+      entry.key === newKey && entry.key !== oldKey
+    )
+  ) {
+    entryFormError.textContent =
+      'That title already exists. Please choose another title.'
+    entryFormError.hidden = false
+    entryKeyInput.focus()
+    return
+  }
 
-    if (!window.autopassAPI) {
-      entryFormError.textContent = 'The vault API is unavailable.'
-      entryFormError.hidden = false
-      return
-    }
+  if (!window.autopassAPI) {
+    entryFormError.textContent = 'The vault API is unavailable.'
+    entryFormError.hidden = false
+    return
+  }
 
-    isSaving = true
-    entrySaveButton.disabled = true
-    entrySaveButton.textContent = 'Saving...'
-    entryFormError.hidden = true
+  isSaving = true
+  entrySaveButton.disabled = true
+  entrySaveButton.textContent = 'Saving...'
+  entryFormError.hidden = true
 
-    try {
-      if (wasEditing) {
-        await window.autopassAPI.update(editingEntryKey, value)
-      } else {
-        await window.autopassAPI.add(key, value)
+  try {
+    if (!wasEditing) {
+      // Create a new entry.
+      await window.autopassAPI.add(newKey, value)
+    } else if (!titleChanged) {
+      // Update content without changing the key.
+      await window.autopassAPI.update(oldKey, value)
+    } else {
+      // Rename: create the new entry first.
+      await window.autopassAPI.add(newKey, value)
+
+      try {
+        // Remove the old entry only after the new one is saved.
+        await window.autopassAPI.remove(oldKey)
+      } catch (error) {
+        // Best-effort rollback so a failed rename does not leave
+        // two entries behind.
+        try {
+          await window.autopassAPI.remove(newKey)
+        } catch (rollbackError) {
+          console.error('Rename rollback failed:', rollbackError)
+        }
+
+        throw new Error(
+          `The new title was saved, but the old entry could not be removed. ${
+            error?.message || ''
+          }`.trim()
+        )
       }
-
-      await refreshEntries()
-      entryDialog.close()
-
-      showToast(
-        wasEditing ? 'Changes saved!' : 'Entry saved successfully!',
-        wasEditing
-          ? `"${key}" has been updated in your vault.`
-          : `"${key}" has been added to your vault.`,
-        'success'
-      )
-    } catch (error) {
-      console.error('Failed to save entry:', error)
-
-      const message = error?.message || 'Please try again.'
-
-      entryFormError.textContent = message
-      entryFormError.hidden = false
-
-      showToast(
-        wasEditing ? 'Could not update entry' : 'Could not save entry',
-        message,
-        'error',
-        5000
-      )
-    } finally {
-      isSaving = false
-      entrySaveButton.disabled = false
-      entrySaveButton.textContent =
-        editingEntryKey !== null ? 'Save changes' : 'Save entry'
     }
-  })
+
+    await refreshEntries()
+    entryDialog.close()
+
+    showToast(
+      wasEditing
+        ? titleChanged ? 'Title updated!' : 'Changes saved!'
+        : 'Entry created!',
+      wasEditing
+        ? titleChanged
+          ? `"${oldKey}" was renamed to "${newKey}".`
+          : `"${newKey}" has been updated in your vault.`
+        : `"${newKey}" has been added to your vault.`,
+      'success'
+    )
+  } catch (error) {
+    console.error('Failed to save entry:', error)
+
+    const message = error?.message || 'Please try again.'
+
+    entryFormError.textContent = message
+    entryFormError.hidden = false
+
+    showToast(
+      'Could not save entry',
+      message,
+      'error',
+      5000
+    )
+
+    // Refresh in case a storage operation partially succeeded.
+    try {
+      await refreshEntries()
+    } catch (refreshError) {
+      console.error('Could not refresh entries:', refreshError)
+    }
+  } finally {
+    isSaving = false
+    entrySaveButton.disabled = false
+    entrySaveButton.textContent =
+      editingEntryKey !== null ? 'Save changes' : 'Save entry'
+  }
+})
 
   // --------------------------------------------------
   // Delete entry
