@@ -43,7 +43,6 @@ function request(action, payload = {}) {
 
 // Public API for dashboard and other renderer scripts.
 window.autopassAPI = {
-  // Resolves after the initial vault listing completes.
   ready: () => {
     if (!startupPromise) {
       return Promise.reject(
@@ -55,16 +54,13 @@ window.autopassAPI = {
   },
 
   list: () => request('list'),
-
   get: (key) => request('get', { key }),
-
   add: (key, value) => request('add', { key, value }),
-
+  update: (key, value) => request('update', { key, value }),
   remove: (key) => request('remove', { key }),
 
   onEntriesUpdated(callback) {
     const handler = (event) => callback(event.detail)
-
     window.addEventListener('autopass:entries', handler)
 
     return () => {

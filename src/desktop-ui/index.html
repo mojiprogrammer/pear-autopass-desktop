@@ -12,6 +12,14 @@
   <link rel="stylesheet" href="../assets/css/style.css" />
 </head>
 <body>
+  
+<div
+  id="toast-container"
+  class="toast-container"
+  aria-live="polite"
+  aria-atomic="false"
+></div>
+
   <div class="app-shell">
     <header class="topbar">
       <div class="window-controls" aria-hidden="true">
@@ -200,21 +208,47 @@
     </main>
   </div>
 
-  <dialog id="info-dialog" class="info-dialog">
-    <form method="dialog">
-      <button class="dialog-close" aria-label="Close">×</button>
-    </form>
+  
+<dialog id="entry-dialog" class="app-dialog">
+  <form id="entry-form">
+    <div class="dialog-header">
+      <h2 id="entry-dialog-title">New entry</h2>
+      <button
+        type="button"
+        id="entry-dialog-close"
+        class="entry-dialog-close"
+        aria-label="Close dialog"
+      >×</button>
+    </div>
 
-    <div class="dialog-lock">♙</div>
-    <h2 id="dialog-title">Your vault, your control.</h2>
-    <p id="dialog-copy">
-      Manage your entries in your private workspace.
-    </p>
+    <label for="entry-key">Title</label>
+    <input
+      id="entry-key"
+      name="key"
+      type="text"
+      maxlength="200"
+      placeholder="e.g. Project ideas"
+      required
+    />
 
-    <button class="primary-button" id="dialog-ok" type="button">
-      Got it
-    </button>
-  </dialog>
+    <label for="entry-value">Content</label>
+    <textarea
+      id="entry-value"
+      name="value"
+      rows="6"
+      placeholder="Write your notes here..."
+      required
+    ></textarea>
+
+    <p id="entry-form-error" class="entry-form-error" hidden></p>
+
+    <div class="entry-dialog-actions">
+      <button type="button" id="entry-cancel-btn">Cancel</button>
+      <button type="submit" id="entry-save-btn">Save entry</button>
+    </div>
+  </form>
+</dialog>
+
 
   <!-- Load the bridge API before the UI code that consumes it. -->
   <script type="module" src="app.js"></script>

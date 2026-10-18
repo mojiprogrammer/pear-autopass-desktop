@@ -98,35 +98,24 @@
   if (shares) shares.textContent = '0'
 }
 
-  function renderEntries() {
+ 
+function renderEntries() {
   if (!entriesContainer) {
-    console.error(
-      'Autopass entries container not found. ' +
-      'Expected an element with id="entries-list".'
-    )
+    console.error('Missing #entries-list container.')
     updateStats()
     return
   }
 
   entriesContainer.setAttribute('aria-busy', 'false')
-
-  // Clear existing rows without losing the empty-state element.
   entriesContainer.replaceChildren()
 
-  if (emptyState) {
-    entriesContainer.append(emptyState)
-  }
-
-  // Filter entries using the current search query.
   const filtered = entries.filter((entry) => {
     const text = `${entry.key} ${entry.value ?? ''}`.toLowerCase()
     return text.includes(searchQuery)
   })
 
-  // Render each Autopass entry.
   filtered.forEach((entry) => {
-    const row = document.createElement('button')
-    row.type = 'button'
+    const row = document.createElement('div')
     row.className = 'activity-row'
     row.dataset.entryKey = entry.key
 
@@ -145,41 +134,52 @@
     const description = document.createElement('span')
     description.className = 'activity-description'
     description.textContent =
-      typeof entry.value === 'string'
-        ? entry.value
-        : 'Vault entry'
+      typeof entry.value === 'string' ? entry.value : 'Vault entry'
 
     content.append(title, description)
-    row.append(icon, content)
 
-    // Open the entry details when its row is clicked.
-    row.addEventListener('click', () => {
+    const actions = document.createElement('span')
+    actions.className = 'entry-actions'
+
+    const editButton = document.createElement('button')
+    editButton.type = 'button'
+    editButton.className = 'entry-action'
+    editButton.textContent = 'Edit'
+    editButton.setAttribute('aria-label', `Edit ${entry.key}`)
+    editButton.addEventListener('click', () => editEntry(entry))
+
+    const deleteButton = document.createElement('button')
+    deleteButton.type = 'button'
+    deleteButton.className = 'entry-action entry-action-delete'
+    deleteButton.textContent = 'Delete'
+    deleteButton.setAttribute('aria-label', `Delete ${entry.key}`)
+    deleteButton.addEventListener('click', () => removeEntry(entry.key))
+
+    actions.append(editButton, deleteButton)
+    row.append(icon, content, actions)
+
+    // Clicking the row opens the entry.
+    row.addEventListener('click', (event) => {
+      if (event.target.closest('button')) return
+
       showDialog(
         entry.key,
         String(entry.value ?? 'No content available.')
       )
     })
 
-    // Insert rows before the empty-state element.
-    if (emptyState && entriesContainer.contains(emptyState)) {
-      entriesContainer.insertBefore(row, emptyState)
-    } else {
-      entriesContainer.append(row)
-    }
+    entriesContainer.append(row)
   })
 
-  // Show the empty state only when there are no matching entries.
+  // Keep the empty-state element inside the activity card.
   if (emptyState) {
+    entriesContainer.append(emptyState)
     emptyState.hidden = filtered.length > 0
-
-    if (filtered.length === 0) {
-      emptyState.textContent = searchQuery
-        ? 'No entries match your search.'
-        : 'Your vault is empty. Add your first entry to get started.'
-    }
+    emptyState.textContent = searchQuery
+      ? 'No entries match your search.'
+      : 'Your vault is empty. Add your first entry to get started.'
   }
 
-  // Update the status message.
   const summary = document.getElementById('save-status')
 
   if (summary) {
@@ -192,9 +192,78 @@
         } in your vault`
   }
 
-  // Update the dashboard counters.
   updateStats()
 }
+
+async function refreshEntries() {
+  entries = await window.autopassAPI.list()
+  renderEntries()
+}
+
+async function addEntry() {
+  const keyInput = window.prompt('Enter an entry title:')
+  if (keyInput === null) return
+
+  const key = keyInput.trim()
+  if (!key) {
+    showDialog('Invalid title', 'Please enter a title for your entry.')
+    return
+  }
+
+  // Creating an existing key should not silently overwrite it.
+  if (entries.some((entry) => entry.key === key)) {
+    showDialog(
+      'Entry already exists',
+      'Choose a different title or edit the existing entry.'
+    )
+    return
+  }
+
+  const value = window.prompt('Enter your entry content:')
+  if (value === null) return
+
+  try {
+    await window.autopassAPI.add(key, value)
+    await refreshEntries()
+    showDialog('Entry created', `"${key}" was saved successfully.`)
+  } catch (error) {
+    showDialog('Could not create entry', error.message)
+  }
+}
+
+async function editEntry(entry) {
+  const value = window.prompt(
+    `Edit content for "${entry.key}":`,
+    String(entry.value ?? '')
+  )
+
+  if (value === null) return
+
+  try {
+    await window.autopassAPI.update(entry.key, value)
+    await refreshEntries()
+    showDialog('Entry updated', `"${entry.key}" was updated successfully.`)
+  } catch (error) {
+    showDialog('Could not update entry', error.message)
+  }
+}
+
+async function removeEntry(key) {
+  const confirmed = window.confirm(
+    `Delete "${key}" permanently from your vault?`
+  )
+
+  if (!confirmed) return
+
+  try {
+    await window.autopassAPI.remove(key)
+    await refreshEntries()
+    showDialog('Entry deleted', `"${key}" was removed from your vault.`)
+  } catch (error) {
+    showDialog('Could not delete entry', error.message)
+  }
+}
+
 
   searchInput?.addEventListener('input', () => {
     searchQuery = searchInput.value.trim().toLowerCase()
@@ -232,29 +301,206 @@
     renderEntries()
   })
 
-  async function addEntry() {
-    const key = prompt('Entry title:')
-    if (key === null) return
+ 
+const entryDialog = document.getElementById('entry-dialog')
+const entryForm = document.getElementById('entry-form')
+const entryKeyInput = document.getElementById('entry-key')
+const entryValueInput = document.getElementById('entry-value')
+const entryDialogTitle = document.getElementById('entry-dialog-title')
+const entrySaveButton = document.getElementById('entry-save-btn')
+const entryFormError = document.getElementById('entry-form-error')
 
-    const cleanKey = key.trim()
-    if (!cleanKey) {
-      showDialog('Title required', 'Please enter a title for your vault entry.')
-      return
-    }
+let editingEntryKey = null
 
-    const value = prompt('Entry content:')
-    if (value === null) return
-
-    try {
-      await window.autopassAPI.add(cleanKey, value)
-      entries = await window.autopassAPI.list()
-      renderEntries()
-      showDialog('Entry saved', `"${cleanKey}" was saved to your vault.`)
-    } catch (error) {
-      console.error('Failed to add entry:', error)
-      showDialog('Could not save entry', error.message)
-    }
+function openEntryDialog(entry = null) {
+  if (!entryDialog || !entryForm) {
+    showDialog('Form unavailable', 'The entry form was not found in index.html.')
+    return
   }
+
+  editingEntryKey = entry ? entry.key : null
+
+  entryForm.reset()
+  entryFormError.hidden = true
+  entryFormError.textContent = ''
+
+  entryDialogTitle.textContent = entry ? 'Edit entry' : 'New entry'
+  entrySaveButton.textContent = entry ? 'Save changes' : 'Save entry'
+
+  entryKeyInput.value = entry ? entry.key : ''
+  entryKeyInput.readOnly = Boolean(entry)
+  entryValueInput.value = entry ? String(entry.value ?? '') : ''
+
+  if (!entryDialog.open) {
+    entryDialog.showModal()
+  }
+
+  entryKeyInput.focus()
+}
+
+async function addEntry() {
+  openEntryDialog()
+}
+
+async function editEntry(entry) {
+  openEntryDialog(entry)
+}
+
+entryForm?.addEventListener('submit', async (event) => {
+  event.preventDefault()
+
+  const key = entryKeyInput.value.trim()
+  const value = entryValueInput.value
+
+  if (!key) {
+    entryFormError.textContent = 'Please enter a title.'
+    entryFormError.hidden = false
+    entryKeyInput.focus()
+    return
+  }
+
+  if (!value.trim()) {
+    entryFormError.textContent = 'Please enter some content.'
+    entryFormError.hidden = false
+    entryValueInput.focus()
+    return
+  }
+
+  // Do not silently overwrite another entry during creation.
+  if (
+    editingEntryKey === null &&
+    entries.some((entry) => entry.key === key)
+  ) {
+    entryFormError.textContent =
+      'An entry with this title already exists. Please choose another title.'
+    entryFormError.hidden = false
+    entryKeyInput.focus()
+    return
+  }
+
+  entrySaveButton.disabled = true
+  entrySaveButton.textContent = 'Saving...'
+  entryFormError.hidden = true
+
+  try {
+    if (editingEntryKey !== null) {
+      await window.autopassAPI.update(editingEntryKey, value)
+    } else {
+      await window.autopassAPI.add(key, value)
+    }
+    const wasEditing = editingEntryKey !== null
+
+    entries = await window.autopassAPI.list()
+    renderEntries()
+
+    entryDialog.close()
+
+    showToast(
+  wasEditing ? 'Changes saved!' : 'Entry saved successfully!',
+  wasEditing
+    ? `"${key}" has been updated in your vault.`
+    : `"${key}" has been added to your vault.`,
+  'success'
+)
+  } catch (error) {
+    console.error('Failed to save entry:', error)
+    entryFormError.textContent = error.message || 'Could not save the entry.'
+    entryFormError.hidden = false
+    showToast('Could not save entry',error.message || 'Please try again.','error',5000)
+  } finally {
+    entrySaveButton.disabled = false
+    entrySaveButton.textContent =
+      editingEntryKey !== null ? 'Save changes' : 'Save entry'
+  }
+})
+
+document.getElementById('entry-dialog-close')?.addEventListener('click', () => {
+  entryDialog?.close()
+})
+
+document.getElementById('entry-cancel-btn')?.addEventListener('click', () => {
+  entryDialog?.close()
+})
+
+function showToast(
+  title,
+  message,
+  type = 'success',
+  duration = 3500
+) {
+  const container = document.getElementById('toast-container')
+
+  if (!container) {
+    console.error('Toast container #toast-container was not found.')
+    return
+  }
+
+  const icons = {
+    success: '✓',
+    error: '!',
+    info: 'i'
+  }
+
+  const toast = document.createElement('div')
+  toast.className = `toast toast--${type}`
+  toast.setAttribute('role', type === 'error' ? 'alert' : 'status')
+  toast.style.setProperty('--toast-duration', `${duration}ms`)
+
+  const icon = document.createElement('div')
+  icon.className = 'toast-icon'
+  icon.setAttribute('aria-hidden', 'true')
+  icon.textContent = icons[type] ?? icons.info
+
+  const content = document.createElement('div')
+  content.className = 'toast-content'
+
+  const heading = document.createElement('p')
+  heading.className = 'toast-title'
+  heading.textContent = title
+
+  const description = document.createElement('p')
+  description.className = 'toast-message'
+  description.textContent = message
+
+  const close = document.createElement('button')
+  close.type = 'button'
+  close.className = 'toast-close'
+  close.setAttribute('aria-label', 'Dismiss notification')
+  close.textContent = '×'
+
+  const progress = document.createElement('div')
+  progress.className = 'toast-progress'
+  progress.setAttribute('aria-hidden', 'true')
+
+  content.append(heading, description)
+  toast.append(icon, content, close, progress)
+  container.append(toast)
+
+  let dismissed = false
+  let timer
+
+  function dismiss() {
+    if (dismissed) return
+    dismissed = true
+
+    clearTimeout(timer)
+    toast.classList.add('is-leaving')
+
+    toast.addEventListener('animationend', () => {
+      toast.remove()
+    }, { once: true })
+
+    // Fallback in case animations are disabled.
+    window.setTimeout(() => toast.remove(), 300)
+  }
+
+  close.addEventListener('click', dismiss)
+
+  timer = window.setTimeout(dismiss, duration)
+
+  return dismiss
+}
+
 
   async function removeEntry(key) {
     const confirmed = confirm(`Remove "${key}" from your vault?`)
@@ -264,9 +510,19 @@
       await window.autopassAPI.remove(key)
       entries = await window.autopassAPI.list()
       renderEntries()
+      showToast(
+  'Entry deleted',
+  `"${key}" was removed from your vault.`,
+  'success'
+)
     } catch (error) {
       console.error('Failed to remove entry:', error)
-      showDialog('Could not remove entry', error.message)
+      showToast(
+  'Could not delete entry',
+  error.message || 'Please try again.',
+  'error',
+  5000
+)
     }
   }
 

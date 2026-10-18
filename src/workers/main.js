@@ -111,6 +111,29 @@ async function handleRequest(request) {
         result = await autopass.get(payload.key)
         break
 
+        case 'update': {
+  const key = String(payload.key ?? '').trim()
+  const value = payload.value
+
+  if (!key) {
+    throw new Error('Entry key is required.')
+  }
+
+  if (typeof value !== 'string') {
+    throw new Error('Entry content must be a string.')
+  }
+
+  const existing = await autopass.get(key)
+
+  if (existing === null) {
+    throw new Error(`Entry "${key}" does not exist.`)
+  }
+
+  await autopass.add(key, value)
+
+  return { key, value }
+}
+
       case 'add':
         if (typeof payload.key !== 'string' || !payload.key.trim()) {
           throw new Error('Entry key is required.')
@@ -205,3 +228,4 @@ goodbye(async () => {
 })
 
 console.log('Pear AutoPass Desktop worker started')
+
