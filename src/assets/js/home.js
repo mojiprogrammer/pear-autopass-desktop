@@ -1,128 +1,93 @@
+(() => {
+  const root = document.documentElement;
+  const toggle = document.getElementById("theme-toggle");
+  const searchInput = document.getElementById("search-input");
+  const rows = [...document.querySelectorAll(".activity-row")];
+  const emptyState = document.getElementById("empty-state");
+  const dialog = document.getElementById("info-dialog");
+  const dialogTitle = document.getElementById("dialog-title");
+  const dialogCopy = document.getElementById("dialog-copy");
+  const dialogOk = document.getElementById("dialog-ok");
+const themeIcon = document.getElementById("theme-icon");
+  function readTheme() {
+    try { return sessionStorage.getItem("peervault-theme"); } catch { return null; }
+  }
+  function saveTheme(theme) {
+    try { sessionStorage.setItem("peervault-theme", theme); } catch { /* Theme still works without storage. */ }
+  }
+  function applyTheme(theme) {
+  const dark = theme === "dark";
 
-    (() => {
-      const root = document.documentElement;
-      const toggle = document.getElementById("theme-toggle");
-      const icon = document.getElementById("theme-icon");
-      const label = document.getElementById("theme-label");
+  root.dataset.theme = dark ? "dark" : "light";
 
-      function readSavedTheme() {
-        try {
-          return sessionStorage.getItem("peervault-theme");
-        } catch {
-          return null;
-        }
-      }
+  // Change the icon based on the active theme
+  if (themeIcon) {
+    themeIcon.textContent = dark ? "☾" : "☼";
+  }
 
-      function saveTheme(theme) {
-        try {
+  if (toggle) {
+    toggle.setAttribute("aria-checked", String(!dark));
+    toggle.setAttribute(
+      "aria-label",
+      dark ? "Switch to light theme" : "Switch to dark theme"
+    );
+    toggle.title = dark ? "Switch to light theme" : "Switch to dark theme";
+  }
 
-          sessionStorage.setItem("peervault-theme", theme);
-        } catch {
-          // Theme switching still works when storage is unavailable.
-        }
-      }
+  saveTheme(theme);
+}
+  applyTheme(readTheme() === "light" ? "light" : "dark");
+  toggle?.addEventListener("click", () => applyTheme(root.dataset.theme === "dark" ? "light" : "dark"));
 
-      function applyTheme(theme) {
-        const isDark = theme === "dark";
+  searchInput?.addEventListener("input", () => {
+    const query = searchInput.value.trim().toLowerCase();
+    let count = 0;
+    rows.forEach(row => {
+      const match = row.textContent.toLowerCase().includes(query);
+      row.hidden = !match;
+      if (match) count++;
+    });
+    if (emptyState) emptyState.hidden = count !== 0;
+    const summary = document.getElementById("save-status");
+    if (summary) summary.textContent = query ? `${count} matching ${count === 1 ? "item" : "items"}` : "Your vault is up to date";
+  });
 
-        root.dataset.theme = isDark ? "dark" : "light";
-        icon.textContent = isDark ? "☼" : "☾";
-        label.textContent = isDark ? "Light mode" : "Dark mode";
-        toggle.setAttribute(
-          "aria-label",
-          isDark ? "Switch to light theme" : "Switch to dark theme"
-        );
-        saveTheme(theme);
-      }
+  const details = {
+    project: ["Project Plan", "A sample note in your recent activity. Your real vault content should be loaded by the application layer."],
+    design: ["Design Assets", "A sample file entry. File previews and access permissions should be handled by your app."],
+    alex: ["Alex Rivera", "A sample contact in your vault. Contact information is demonstration content."],
+    team: ["Team Docs", "A sample shared item. Actual sharing depends on your peer connection and authorization."]
+  };
+  function showDialog(title, copy) {
+    if (!dialog) return;
+    dialogTitle.textContent = title;
+    dialogCopy.textContent = copy;
+    if (typeof dialog.showModal === "function") dialog.showModal();
+    else alert(`${title}\n\n${copy}`);
+  }
+  rows.forEach(row => row.addEventListener("click", () => {
+    const item = details[row.dataset.entry];
+    if (item) showDialog(item[0], item[1]);
+  }));
+  document.getElementById("learn-more-btn")?.addEventListener("click", () =>
+    showDialog("Your vault, your control.", "PeerVault is designed around privacy. This dashboard is a UI preview; encryption, storage, and peer permissions must be provided by your application's data layer."));
+  document.getElementById("add-entry-btn")?.addEventListener("click", () =>
+    showDialog("Create a new entry", "Connect this action to your existing app.js entry-creation workflow to save a real note, file, or secure item."));
+  document.getElementById("view-all-btn")?.addEventListener("click", () =>
+    showDialog("Recent activity", "This preview shows four sample activity items. Connect this view to your real activity feed when the data layer is ready."));
+  dialogOk?.addEventListener("click", () => dialog?.close());
+  dialog?.querySelector(".dialog-close")?.addEventListener("click", () => dialog.close());
 
-      const savedTheme = readSavedTheme();
-      applyTheme(savedTheme === "light" ? "light" : "dark");
+  document.querySelectorAll(".nav-item").forEach(button => button.addEventListener("click", () => {
+    document.querySelectorAll(".nav-item").forEach(item => item.classList.toggle("active", item === button));
+    const view = button.dataset.view;
+    if (view && view !== "dashboard") {
+      showDialog(button.textContent.trim(), `The ${button.textContent.trim()} view is a dashboard navigation placeholder. Connect it to your existing application routing.`);
+    }
+  }));
 
-      toggle.addEventListener("click", () => {
-        applyTheme(root.dataset.theme === "dark" ? "light" : "dark");
-      });
-
-      // UX-only search for the sample cards.
-      // Keep your app.js search implementation if it already owns this input.
-      const searchInput = document.getElementById("search-input");
-      const entriesList = document.getElementById("entries-list");
-      const summary = document.getElementById("entries-summary");
-
-      searchInput.addEventListener("input", () => {
-        const query = searchInput.value.trim().toLowerCase();
-        const cards = entriesList.querySelectorAll(".entry-card");
-        let visibleCount = 0;
-
-        cards.forEach((card) => {
-          const matches = card.textContent.toLowerCase().includes(query);
-          card.hidden = !matches;
-          if (matches) visibleCount++;
-        });
-
-        summary.textContent = query
-          ? `${visibleCount} matching ${visibleCount === 1 ? "entry" : "entries"}`
-          : "Recent entries";
-      });
-
-      // UX-only selection for the sample entries.
-      // The real data-driven detail view should be implemented in app.js.
-      const sampleEntries = {
-        welcome: {
-          title: "Welcome to Pear AutoPass Desktop",
-          subtitle: "A calm, organized space for information you want to keep close.",
-          body: `
-            <h2>A little space for what matters</h2>
-            <p>Pear AutoPass Desktop is your workspace for keeping useful information organized. Browse entries, search for what you need, and manage your vault without unnecessary clutter.</p>
-            <div class="callout"><strong>Designed for privacy.</strong><br>Keep your vault organized and use the connection status to understand when peer-related functionality is available.</div>
-            <h2>Getting started</h2>
-            <ul>
-              <li>Create an entry using the plus button in the list header.</li>
-              <li>Use search to find entries by title or content.</li>
-              <li>Keep related information grouped into collections.</li>
-              <li>Review your peer connection status in the sidebar.</li>
-            </ul>`
-        },
-        project: {
-          title: "Project workspace",
-          subtitle: "A sample collection of project information and technical notes.",
-          body: `
-            <h2>Project overview</h2>
-            <p>Keep implementation notes, links, decisions, and follow-up tasks in one place.</p>
-            <div class="callout"><strong>UX preview.</strong><br>This content is static demonstration data, not a stored vault entry.</div>
-            <h2>Next steps</h2>
-            <ul><li>Record the key project decisions.</li><li>Organize useful references.</li><li>Review outstanding tasks.</li></ul>`
-        },
-        credentials: {
-          title: "Development credentials",
-          subtitle: "A sample secure-entry view. No real credentials are included.",
-          body: `
-            <h2>Credential details</h2>
-            <p>This preview deliberately contains no real usernames, passwords, tokens, or secrets.</p>
-            <div class="callout"><strong>Security note.</strong><br>Ensure actual secrets are protected by your vault's storage and access-control implementation. Never render sensitive values into untrusted preview text.</div>`
-        },
-        ideas: {
-          title: "Ideas to explore",
-          subtitle: "A lightweight place to collect ideas and revisit them later.",
-          body: `
-            <h2>Ideas</h2>
-            <ul><li>Explore a simpler way to organize related entries.</li><li>Make entry search feel instant.</li><li>Show peer synchronization state clearly.</li><li>Keep important actions easy to discover.</li></ul>
-            <p>These are demonstration notes for the interface prototype.</p>`
-        }
-      };
-
-      entriesList.addEventListener("click", (event) => {
-        const card = event.target.closest(".entry-card");
-        if (!card || !sampleEntries[card.dataset.entry]) return;
-
-        entriesList.querySelectorAll(".entry-card").forEach((item) => {
-          item.classList.toggle("active", item === card);
-        });
-
-        const entry = sampleEntries[card.dataset.entry];
-        document.getElementById("current-entry-label").textContent = entry.title;
-        document.getElementById("detail-title").textContent = entry.title;
-        document.getElementById("detail-subtitle").textContent = entry.subtitle;
-        document.getElementById("detail-body").innerHTML = entry.body;
-      });
-    })();
-
+  document.getElementById("update-btn")?.addEventListener("click", () => {
+    const label = document.getElementById("connection-label");
+    if (label) label.textContent = "Connection status refreshed";
+  });
+})(); 
