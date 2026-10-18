@@ -65,6 +65,34 @@ const themeIcon = document.getElementById("theme-icon");
     if (typeof dialog.showModal === "function") dialog.showModal();
     else alert(`${title}\n\n${copy}`);
   }
+  
+function setConnectionStatus(isConnected) {
+  const dot = document.getElementById("connection-dot");
+  const label = document.getElementById("connection-label");
+  const announcement = document.getElementById("v");
+
+  if (!dot || !label) return;
+
+  dot.classList.toggle("connected", isConnected);
+  dot.classList.toggle("disconnected", !isConnected);
+
+  label.textContent = isConnected
+    ? "Connected to Pear"
+    : "Disconnected";
+
+  if (announcement) {
+    announcement.textContent = isConnected
+      ? "Connected"
+      : "Disconnected";
+  }
+}
+
+// Initial visual state for your UI preview
+setConnectionStatus(true);
+
+// Example: simulate disconnection after 5 seconds
+// setTimeout(() => setConnectionStatus(false), 5000);
+
   rows.forEach(row => row.addEventListener("click", () => {
     const item = details[row.dataset.entry];
     if (item) showDialog(item[0], item[1]);

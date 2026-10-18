@@ -43,11 +43,23 @@
         <button class="nav-item" type="button" data-view="settings"><span class="nav-icon">⚙</span><span>Settings</span></button>
       </nav>
       <div class="sidebar-spacer"></div>
-      <section class="connection-status" aria-label="Peer connection status">
-        <span class="connection-dot" aria-hidden="true"></span>
-        <div><div class="connection-title" id="connection-label">Connected to Pear</div><p>Desktop App</p></div>
-        <span id="v" class="visually-hidden" aria-live="polite">Ready</span>
-      </section>
+     <section class="connection-status" aria-label="Peer connection status">
+  <span
+    class="connection-dot connected"
+    id="connection-dot"
+    aria-hidden="true">
+  </span>
+
+  <div>
+    <div class="connection-title" id="connection-label">
+      Connected to Pear
+    </div>
+  </div>
+
+  <span id="v" class="visually-hidden" aria-live="polite">
+    Connected
+  </span>
+</section>
     </aside>
 
     <main class="dashboard">
