@@ -232,13 +232,46 @@
     />
 
     <label for="entry-value">Content</label>
-    <textarea
-      id="entry-value"
-      name="value"
-      rows="6"
-      placeholder="Write your notes here..."
-      required
-    ></textarea>
+  
+<label for="entry-value">Content</label>
+
+<div class="editor-wrapper">
+  <div class="editor-toolbar" role="toolbar" aria-label="Text formatting">
+    <button type="button" data-command="bold" aria-label="Bold" title="Bold">
+      <strong>B</strong>
+    </button>
+    <button type="button" data-command="italic" aria-label="Italic" title="Italic">
+      <em>I</em>
+    </button>
+    <button type="button" data-command="underline" aria-label="Underline" title="Underline">
+      <u>U</u>
+    </button>
+    <span class="toolbar-divider"></span>
+    <button type="button" data-command="insertUnorderedList" aria-label="Bulleted list" title="Bulleted list">
+      • List
+    </button>
+    <button type="button" data-command="insertOrderedList" aria-label="Numbered list" title="Numbered list">
+      1. List
+    </button>
+    <button type="button" data-command="formatBlock" data-value="h3" aria-label="Heading" title="Heading">
+      H
+    </button>
+    <button type="button" data-command="removeFormat" aria-label="Clear formatting" title="Clear formatting">
+      Tx
+    </button>
+  </div>
+
+  <div
+    id="entry-value"
+    class="text-editor"
+    contenteditable="true"
+    role="textbox"
+    aria-label="Entry content"
+    aria-multiline="true"
+    data-placeholder="Write your notes here..."
+  ></div>
+</div>
+
 
     <p id="entry-form-error" class="entry-form-error" hidden></p>
 

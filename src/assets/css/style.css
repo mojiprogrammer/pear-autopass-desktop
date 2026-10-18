@@ -959,6 +959,280 @@ html[data-theme="dark"] .toast {
   }
 }
 
+/* =========================================
+   PeerVault — Animated Entry Dialog
+   ========================================= */
+
+/* Dimmed, softly blurred background */
+#entry-dialog::backdrop {
+  background: rgba(5, 10, 15, 0);
+  backdrop-filter: blur(0);
+  -webkit-backdrop-filter: blur(0);
+  animation: vault-backdrop-in 420ms ease-out forwards;
+}
+
+/* The dialog's opening animation */
+#entry-dialog[open] {
+  animation: vault-dialog-in 620ms
+    cubic-bezier(0.16, 1, 0.3, 1) both;
+  transform-origin: center center;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+/* A thin mint light at the top of the dialog */
+#entry-dialog::before {
+  content: "";
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  left: -100%;
+  width: 60%;
+  height: 2px;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    #a6e8cb,
+    #e3fff2,
+    transparent
+  );
+  box-shadow: 0 0 16px rgba(166, 232, 203, 0.55);
+}
+
+#entry-dialog[open]::before {
+  animation: vault-light-sweep 850ms 120ms ease-out both;
+}
+
+/* Animate the dialog contents in sequence */
+#entry-dialog[open] .dialog-header {
+  animation: vault-content-in 420ms 100ms ease-out both;
+}
+
+#entry-dialog[open] label,
+#entry-dialog[open] #entry-key,
+#entry-dialog[open] #entry-value {
+  animation: vault-content-in 420ms 160ms ease-out both;
+}
+
+#entry-dialog[open] #entry-value {
+  animation-delay: 220ms;
+}
+
+#entry-dialog[open] .entry-dialog-actions {
+  animation: vault-content-in 420ms 280ms ease-out both;
+}
+
+/* Main spring-like reveal */
+@keyframes vault-dialog-in {
+  0% {
+    opacity: 0;
+    transform: translateY(28px) scale(0.94) rotateX(5deg);
+    filter: blur(7px);
+  }
+
+  65% {
+    opacity: 1;
+    transform: translateY(-3px) scale(1.012) rotateX(0);
+    filter: blur(0);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1) rotateX(0);
+    filter: blur(0);
+  }
+}
+
+/* Backdrop fade and blur */
+@keyframes vault-backdrop-in {
+  from {
+    background: rgba(5, 10, 15, 0);
+    backdrop-filter: blur(0);
+    -webkit-backdrop-filter: blur(0);
+  }
+
+  to {
+    background: rgba(5, 10, 15, 0.55);
+    backdrop-filter: blur(7px);
+    -webkit-backdrop-filter: blur(7px);
+  }
+}
+
+/* Mint light sweeping across the top */
+@keyframes vault-light-sweep {
+  0% {
+    left: -60%;
+    opacity: 0;
+  }
+
+  20% {
+    opacity: 1;
+  }
+
+  100% {
+    left: 120%;
+    opacity: 0;
+  }
+}
+
+/* Subtle staggered content reveal */
+@keyframes vault-content-in {
+  from {
+    opacity: 0;
+    transform: translateY(9px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Respect accessibility settings */
+@media (prefers-reduced-motion: reduce) {
+  #entry-dialog[open],
+  #entry-dialog[open]::before,
+  #entry-dialog[open] .dialog-header,
+  #entry-dialog[open] label,
+  #entry-dialog[open] #entry-key,
+  #entry-dialog[open] #entry-value,
+  #entry-dialog[open] .entry-dialog-actions,
+  #entry-dialog::backdrop {
+    animation: none !important;
+  }
+
+  #entry-dialog[open] {
+    filter: none;
+    transform: none;
+  }
+}
+
+
+/* =========================================
+   PeerVault Rich Text Editor
+   ========================================= */
+
+.editor-wrapper {
+  overflow: hidden;
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  background: var(--surface);
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.editor-wrapper:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.editor-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-strong);
+}
+
+.editor-toolbar button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  min-height: 30px;
+  padding: 0 8px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+  transition:
+    background 140ms ease,
+    border-color 140ms ease;
+}
+
+.editor-toolbar button:hover {
+  background: var(--surface-hover);
+  border-color: var(--border);
+}
+
+.editor-toolbar button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.toolbar-divider {
+  width: 1px;
+  height: 22px;
+  margin: 0 3px;
+  background: var(--border);
+}
+
+.text-editor {
+  min-height: 180px;
+  max-height: 360px;
+  overflow-y: auto;
+  padding: 14px 16px;
+  color: var(--text);
+  background: transparent;
+  font: inherit;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+  outline: none;
+  white-space: normal;
+}
+
+.text-editor:empty::before {
+  content: attr(data-placeholder);
+  color: var(--muted);
+  pointer-events: none;
+}
+
+.text-editor p {
+  margin: 0 0 0.65em;
+}
+
+.text-editor h3 {
+  margin: 0.7em 0 0.45em;
+  font-size: 1.2em;
+  font-weight: 700;
+}
+
+.text-editor ul,
+.text-editor ol {
+  padding-left: 24px;
+  margin: 0.5em 0;
+}
+
+.text-editor blockquote {
+  margin: 0.75em 0;
+  padding-left: 12px;
+  border-left: 3px solid var(--accent);
+  color: var(--text-secondary);
+}
+
+.text-editor:focus {
+  outline: none;
+}
+
+.text-editor a {
+  color: var(--accent-deep);
+  text-decoration: underline;
+}
+
+/* Rendered entry previews */
+.activity-description {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+
+
 .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
 @media (max-width: 1250px) {
   .app-shell {  grid-template-columns: 205px minmax(0, 1fr); }
