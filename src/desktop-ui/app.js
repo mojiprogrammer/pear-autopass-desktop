@@ -1,7 +1,7 @@
 
 const bridge = window.bridge
 const decoder = new TextDecoder('utf-8')
-const workerPath = '/workers/main.js'
+const workerPath = '/workers/autopass-service.js'
 
 const pendingRequests = new Map()
 let nextRequestId = 0
