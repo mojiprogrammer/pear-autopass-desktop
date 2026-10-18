@@ -1,11 +1,6 @@
 
 (() => {
   'use strict';
-
-  // --------------------------------------------------
-  // DOM elements
-  // --------------------------------------------------
-
   const root = document.documentElement;
   const toggle = document.getElementById('theme-toggle');
   const themeIcon = document.getElementById('theme-icon');
@@ -633,10 +628,17 @@
     }
   }
 
-  function closeEntryDialog() {
-    if (isSaving) return;
-    entryDialog?.close();
+  
+function closeEntryDialog() {
+  if (isSaving || !entryDialog?.open) return;
+
+  // Modern Chromium supports animated dialog closing.
+  if (typeof entryDialog.requestClose === 'function') {
+    entryDialog.requestClose();
+  } else {
+    closeEntryDialog();
   }
+}
 
   document.getElementById('add-entry-btn')?.addEventListener('click', () => {
     openEntryDialog();

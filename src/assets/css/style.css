@@ -1023,6 +1023,73 @@ html[data-theme="dark"] .toast {
   animation: vault-content-in 420ms 280ms ease-out both;
 }
 
+/* =========================================
+   Delete confirmation modal animation
+   ========================================= */
+
+dialog.app-dialog[open] {
+  animation: delete-modal-enter 220ms cubic-bezier(0.2, 0.75, 0.25, 1) both;
+}
+
+dialog.app-dialog[open]::backdrop {
+  animation: delete-backdrop-enter 220ms ease-out both;
+  background: rgb(8 12 18 / 38%);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
+
+@keyframes delete-modal-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes delete-backdrop-enter {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+/* Respect the user's reduced-motion preference. */
+@media (prefers-reduced-motion: reduce) {
+  dialog.app-dialog[open],
+  dialog.app-dialog[open]::backdrop {
+    animation: none;
+  }
+}
+
+#entry-delete-confirm-btn {
+  transition:
+    background-color 160ms ease,
+    transform 160ms ease,
+    box-shadow 160ms ease;
+}
+
+#entry-delete-confirm-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgb(220 60 60 / 16%);
+}
+
+#entry-delete-confirm-btn:active {
+  transform: translateY(0) scale(0.98);
+}
+
+#entry-delete-confirm-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+
 /* Main spring-like reveal */
 @keyframes vault-dialog-in {
   0% {
