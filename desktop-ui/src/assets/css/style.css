@@ -21,16 +21,16 @@
   --border: #e4e9e7;
   --border-strong: #d5ddda;
 
-  --text: #202824;
-  --text-secondary: #59655f;
-  --muted: #89948e;
+  --text: #18211c;
+  --text-secondary: #46534b;;
+  --muted: #707c74;
 
   --accent: #a6e8cb;
   --accent-deep: #267c5a;
   --accent-soft: #e7f8ef;
   --accent-text: #163d2d;
 
-  --danger: #c94d52;
+  --danger: #9b282d;
   --danger-soft: #fff0f0;
 
   --shadow: 0 12px 35px rgb(28 48 38 / 7%);
@@ -69,7 +69,7 @@ html[data-theme="dark"] {
   --accent-soft: #243c32;
   --accent-text: #153528;
 
-  --danger: #ff8b91;
+  --danger: #9b282d;
   --danger-soft: #3a2327;
 
   --shadow: 0 16px 45px rgb(0 0 0 / 20%);
@@ -668,7 +668,7 @@ html[data-theme="dark"] .dashboard {
 .stat-copy p {
   margin: 0 0 5px;
   color: var(--text-secondary);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 550;
 }
 
@@ -1363,7 +1363,7 @@ dialog::backdrop {
   }
 
   .stat-copy p {
-    font-size: 10px;
+    font-size: 12px;
   }
 
   .stat-copy strong {
@@ -1540,10 +1540,13 @@ dialog.app-dialog[open]::backdrop {
 /* ---------- Toast notifications ---------- */
 
 
+
+/* ---------- Toast notifications ---------- */
+
 .toast-container {
   position: fixed;
-  right: 24px;
   top: 24px;
+  right: 24px;
   z-index: 10000;
 
   display: flex;
@@ -1555,20 +1558,24 @@ dialog.app-dialog[open]::backdrop {
 }
 
 .toast {
+  --toast-color: #6da9ed;
+  --toast-tint: rgb(109 169 237 / 10%);
+
   position: relative;
   display: flex;
   align-items: center;
   gap: 12px;
 
   width: 100%;
-  padding: 15px 16px 19px;
+  min-height: 66px;
+  padding: 15px 16px 18px;
 
-  border: 1px solid var(--border-strong);
+  border: 1px solid var(--border);
   border-radius: 14px;
   background: var(--surface);
   color: var(--text);
 
-  box-shadow: 0 14px 40px rgb(0 0 0 / 22%);
+  box-shadow: 0 12px 35px rgb(0 0 0 / 16%);
 
   pointer-events: auto;
   overflow: hidden;
@@ -1577,52 +1584,55 @@ dialog.app-dialog[open]::backdrop {
   animation: peer-vault-toast-in 220ms ease-out both;
 }
 
-/* Toast type indicators */
+/* Toast colors */
+
 .toast-success {
-  border-left: 4px solid #36a875;
+  --toast-color: #209663;
+  --toast-tint: rgb(32 150 99 / 10%);
 }
 
 .toast-error {
-  border-left: 4px solid var(--danger);
+  --toast-color: #dc454d;
+  --toast-tint: rgb(220 69 77 / 10%);
 }
 
 .toast-info {
-  border-left: 4px solid #6da9ed;
+  --toast-color: #4c91df;
+  --toast-tint: rgb(76 145 223 / 10%);
 }
 
-/* Toast icon */
+/* Icon */
+
 .toast-icon {
   display: grid;
-  flex: 0 0 28px;
-  width: 28px;
-  height: 28px;
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
   place-items: center;
 
+  border: 1px solid color-mix(in srgb, var(--toast-color) 22%, transparent);
   border-radius: 50%;
-  background: var(--surface-strong);
-  color: var(--accent-deep);
+  background: var(--toast-tint);
+  color: var(--toast-color);
+
   font-size: 15px;
   font-weight: 800;
 }
 
-.toast-error .toast-icon {
-  color: var(--danger);
-}
+/* Message: green, red, or blue according to toast type */
 
-.toast-info .toast-icon {
-  color: #6da9ed;
-}
-
-/* Message */
 .toast-message {
   flex: 1;
   min-width: 0;
+
+  color: var(--toast-color);
   font-size: 13px;
-  font-weight: 550;
-  line-height: 1.5;
+  font-weight: 650;
+  line-height: 1.55;
 }
 
 /* Dismiss button */
+
 .toast-dismiss {
   display: grid;
   flex: 0 0 28px;
@@ -1634,8 +1644,14 @@ dialog.app-dialog[open]::backdrop {
   border-radius: 7px;
   background: transparent;
   color: var(--text-secondary);
+
   font-size: 21px;
+  line-height: 1;
   cursor: pointer;
+
+  transition:
+    background 160ms ease,
+    color 160ms ease;
 }
 
 .toast-dismiss:hover {
@@ -1643,49 +1659,39 @@ dialog.app-dialog[open]::backdrop {
   color: var(--text);
 }
 
-/* Progress bar background */
+/* Thin progress track */
+
 .toast-progress-track {
   position: absolute;
+  right: 0;
   bottom: 0;
   left: 0;
-  right: 0;
 
-  height: 4px;
+  height: 3px;
   overflow: hidden;
-
-  background: var(--surface-strong);
+  background: var(--toast-tint);
 }
 
-/* Progress bar animation */
+/* Bar shrinks over the toast's 4-second lifetime */
+
 .toast-progress-bar {
   width: 100%;
   height: 100%;
+  border-radius: inherit;
 
-  background: var(--accent, #a6e8cb);
+  background: var(--toast-color);
   transform: scaleX(1);
   transform-origin: left center;
 
-  animation: peer-vault-toast-progress 4s linear forwards;
+  animation: peer-vault-toast-progress 4000ms linear both;
 }
 
-/* Different progress colors for each toast type */
-.toast-success .toast-progress-bar {
-  background: #36a875;
-}
+/* Entrance animation */
 
-.toast-error .toast-progress-bar {
-  background: var(--danger);
-}
-
-.toast-info .toast-progress-bar {
-  background: #6da9ed;
-}
-
-/* Toast entrance animation */
 @keyframes peer-vault-toast-in {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(-8px);
   }
 
   to {
@@ -1694,7 +1700,6 @@ dialog.app-dialog[open]::backdrop {
   }
 }
 
-/* Progress moves from full width to zero */
 @keyframes peer-vault-toast-progress {
   from {
     transform: scaleX(1);
@@ -1706,15 +1711,17 @@ dialog.app-dialog[open]::backdrop {
 }
 
 /* Mobile positioning */
+
 @media (max-width: 480px) {
   .toast-container {
-    right: 16px;
     top: 16px;
+    right: 16px;
     width: calc(100vw - 32px);
   }
 }
 
 /* Respect reduced-motion preferences */
+
 @media (prefers-reduced-motion: reduce) {
   .toast {
     animation: none;
@@ -1725,6 +1732,7 @@ dialog.app-dialog[open]::backdrop {
     transform: scaleX(0);
   }
 }
+
 
 /* =========================================
    PeerVault modal positioning fix

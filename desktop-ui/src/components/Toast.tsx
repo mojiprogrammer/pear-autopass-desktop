@@ -1,4 +1,5 @@
 
+
 import { useEffect } from 'react';
 
 export interface ToastMessage {
@@ -12,11 +13,13 @@ interface ToastProps {
   onDismiss: () => void;
 }
 
+const TOAST_DURATION = 4000;
+
 export default function Toast({ toast, onDismiss }: ToastProps) {
   useEffect(() => {
     if (!toast) return;
 
-    const timeoutId = window.setTimeout(onDismiss, 4000);
+    const timeoutId = window.setTimeout(onDismiss, TOAST_DURATION);
 
     return () => {
       window.clearTimeout(timeoutId);
@@ -32,8 +35,16 @@ export default function Toast({ toast, onDismiss }: ToastProps) {
   }[toast.type];
 
   return (
-    <div className="toast-container" aria-live="polite" aria-atomic="true">
-      <div className={`toast toast-${toast.type}`} role={toast.type === 'error' ? 'alert' : 'status'}>
+    <div
+      className="toast-container"
+      aria-live={toast.type === 'error' ? 'assertive' : 'polite'}
+      aria-atomic="true"
+    >
+      <div
+        key={toast.id}
+        className={`toast toast-${toast.type}`}
+        role={toast.type === 'error' ? 'alert' : 'status'}
+      >
         <span className="toast-icon" aria-hidden="true">
           {icon}
         </span>
@@ -48,7 +59,12 @@ export default function Toast({ toast, onDismiss }: ToastProps) {
         >
           ×
         </button>
+
+        <div className="toast-progress-track" aria-hidden="true">
+          <div className="toast-progress-bar" />
+        </div>
       </div>
     </div>
   );
 }
+
