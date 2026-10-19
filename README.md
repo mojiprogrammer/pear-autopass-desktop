@@ -258,9 +258,37 @@ Do not replace an existing working upgrade link without understanding how the ap
 
 ### 5. Run the application
 
-```bash
+## Running the Application Locally
+
+The application requires the Vite development server and the Pear/Electron desktop application to run in separate terminals.
+
+### 1. Start the Vite Development Server
+
+Open a terminal in the project root and run:
+
+```powershell
+npx vite --config vite.config.ts
+```
+
+Keep this terminal running. Vite will display the local development server address, for example:
+
+```text
+http://localhost:5173
+```
+
+### 2. Start the Desktop Application
+
+Open a **second terminal** in the project root. Set `PEAR_DEV_SERVER_URL` to the local address displayed by Vite, then start the application:
+
+```powershell
+$env:PEAR_DEV_SERVER_URL="http://localhost:5173"
 npm start
 ```
+
+Replace `http://localhost:5173` with the actual Vite development server address if it differs.
+
+Keep both terminals running while developing. Start Vite first, then launch the desktop application with `npm start`.
+
 
 The command must match the `scripts.start` entry in `package.json`. If the project uses another script for development, run that script instead.
 
