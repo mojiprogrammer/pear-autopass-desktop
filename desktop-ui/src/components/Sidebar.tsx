@@ -76,7 +76,7 @@ export default function Sidebar({
             className="connection-dot"
             aria-hidden="true"
           />
-          <span>Peer connection</span>
+          <span>Peer AutoPass is Connected</span>
         </div>
 
         {/* <p className="sidebar-entry-count">
