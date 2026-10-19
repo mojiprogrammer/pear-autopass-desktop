@@ -2,10 +2,12 @@
 import type {
     Entry,
     EntryAction,
-    WorkerMessage
+    WorkerMessage,
 } from '../types/entry';
 
 const WORKER_PATH = '/workers/autopass-service.js';
+const REQUEST_TIMEOUT_MS = 10_000;
+const DEFAULT_ERROR_MESSAGE = 'An unexpected error occurred.';
 
 interface WorkerBridge
 {
@@ -54,7 +56,9 @@ export interface AutopassAPI
     add: (key: string, value: string) => Promise<unknown>;
     update: (key: string, value: string) => Promise<unknown>;
     remove: (key: string) => Promise<unknown>;
-    onEntriesUpdated: (callback: (entries: Entry[]) => void) => () => void;
+    onEntriesUpdated: (
+        callback: (entries: Entry[]) => void,
+    ) => () => void;
 }
 
 interface PendingRequest
@@ -73,13 +77,29 @@ interface IPCResponse
     error?: string;
 }
 
+type Unsubscribe = () => void;
+
 const pendingRequests = new Map<string, PendingRequest>();
 const entriesListeners = new Set<(entries: Entry[]) => void>();
+const workerListenerCleanup: Unsubscribe[] = [];
 
 let requestCounter = 0;
 let workerStarted = false;
 let startupPromise: Promise<Entry[]> | undefined;
-let unsubscribeIPC: (() => void) | undefined;
+
+function getErrorMessage(error: unknown): string
+{
+    return error instanceof Error
+        ? error.message
+        : DEFAULT_ERROR_MESSAGE;
+}
+
+function toError(error: unknown, fallback: string): Error
+{
+    return error instanceof Error
+        ? error
+        : new Error(fallback);
+}
 
 function parseMessage(data: unknown): WorkerMessage | null
 {
@@ -92,11 +112,19 @@ function parseMessage(data: unknown): WorkerMessage | null
                     ? new TextDecoder().decode(data)
                     : null;
 
-        if (!raw) return null;
+        if (!raw)
+        {
+            return null;
+        }
 
         const parsed: unknown = JSON.parse(raw);
 
-        if (typeof parsed !== 'object' || parsed === null || !('type' in parsed))
+        if (
+            typeof parsed !== 'object' ||
+            parsed === null ||
+            !('type' in parsed) ||
+            typeof parsed.type !== 'string'
+        )
         {
             return null;
         }
@@ -112,7 +140,189 @@ function dispatchEntries(entries: Entry[]): void
 {
     for (const callback of entriesListeners)
     {
-        callback(entries);
+        try
+        {
+            callback(entries);
+        } catch (error: unknown)
+        {
+            console.error(
+                'An entries-updated listener failed:',
+                error,
+            );
+        }
+    }
+}
+
+function cleanupWorkerListeners(): void
+{
+    while (workerListenerCleanup.length > 0)
+    {
+        const unsubscribe = workerListenerCleanup.pop();
+
+        try
+        {
+            unsubscribe?.();
+        } catch (error: unknown)
+        {
+            console.error(
+                'Failed to remove a worker listener:',
+                error,
+            );
+        }
+    }
+}
+
+function rejectPendingRequests(error: Error): void
+{
+    for (const pending of pendingRequests.values())
+    {
+        pending.reject(error);
+    }
+
+    pendingRequests.clear();
+}
+
+function handleWorkerExit(data: unknown): void
+{
+    workerStarted = false;
+    startupPromise = undefined;
+
+    cleanupWorkerListeners();
+
+    rejectPendingRequests(
+        new Error(`Autopass worker exited: ${ String(data) }`),
+    );
+}
+
+function handleIPC(data: unknown): void
+{
+    const message = parseMessage(data);
+
+    if (!message)
+    {
+        console.warn('Ignoring an invalid Autopass worker message.');
+        return;
+    }
+
+    if (message.type === 'response')
+    {
+        const response = message as IPCResponse;
+        const pending = pendingRequests.get(response.id);
+
+        if (!pending)
+        {
+            return;
+        }
+
+        pendingRequests.delete(response.id);
+
+        if (response.error || response.success === false)
+        {
+            pending.reject(
+                new Error(response.error || 'Worker request failed.'),
+            );
+            return;
+        }
+
+        pending.resolve(response.result);
+        return;
+    }
+
+    if (message.type === 'entries-updated')
+    {
+        void list()
+            .then(dispatchEntries)
+            .catch((error: unknown) =>
+            {
+                console.error(
+                    'Failed to refresh entries after a worker update:',
+                    error,
+                );
+            });
+    }
+}
+
+async function startWorker(): Promise<void>
+{
+    const bridge = window.bridge;
+
+    if (!bridge)
+    {
+        throw new Error('Desktop worker bridge is unavailable.');
+    }
+
+    if (workerStarted)
+    {
+        return;
+    }
+
+    cleanupWorkerListeners();
+
+    const unsubscribeIPC = bridge.onWorkerIPC(
+        WORKER_PATH,
+        handleIPC,
+    );
+
+    if (unsubscribeIPC)
+    {
+        workerListenerCleanup.push(unsubscribeIPC);
+    }
+
+    const unsubscribeStdout = bridge.onWorkerStdout?.(
+        WORKER_PATH,
+        (data) =>
+        {
+            console.debug('[Autopass worker]', data);
+        },
+    );
+
+    if (unsubscribeStdout)
+    {
+        workerListenerCleanup.push(unsubscribeStdout);
+    }
+
+    const unsubscribeStderr = bridge.onWorkerStderr?.(
+        WORKER_PATH,
+        (data) =>
+        {
+            console.error('[Autopass worker stderr]', data);
+        },
+    );
+
+    if (unsubscribeStderr)
+    {
+        workerListenerCleanup.push(unsubscribeStderr);
+    }
+
+    const unsubscribeExit = bridge.onWorkerExit?.(
+        WORKER_PATH,
+        handleWorkerExit,
+    );
+
+    if (unsubscribeExit)
+    {
+        workerListenerCleanup.push(unsubscribeExit);
+    }
+
+    try
+    {
+        const started = await bridge.startWorker(WORKER_PATH);
+
+        if (started === false)
+        {
+            throw new Error('Failed to start the Autopass worker.');
+        }
+
+        workerStarted = true;
+    } catch (error: unknown)
+    {
+        workerStarted = false;
+        cleanupWorkerListeners();
+
+        throw toError(
+            error,
+            'Failed to start the Autopass worker.',
+        );
     }
 }
 
@@ -126,7 +336,7 @@ function request<T>(
     if (!bridge)
     {
         return Promise.reject(
-            new Error("Desktop worker bridge is unavailable."),
+            new Error('Desktop worker bridge is unavailable.'),
         );
     }
 
@@ -140,10 +350,11 @@ function request<T>(
 
             reject(
                 new Error(
-                    `Worker request "${ action }" timed out after 10 seconds.`,
+                    `Worker request "${ action }" timed out after ` +
+                    `${ REQUEST_TIMEOUT_MS / 1000 } seconds.`,
                 ),
             );
-        }, 10_000);
+        }, REQUEST_TIMEOUT_MS);
 
         pendingRequests.set(id, {
             resolve: (value) =>
@@ -161,120 +372,46 @@ function request<T>(
 
         try
         {
-            bridge.writeWorkerIPC(
+            const writeResult = bridge.writeWorkerIPC(
                 WORKER_PATH,
                 JSON.stringify({ id, action, payload }),
             );
-        } catch (error)
-        {
-            pendingRequests.delete(id);
-            clearTimeout(timeout);
 
-            reject(
-                error instanceof Error
-                    ? error
-                    : new Error("Failed to send a worker request."),
+            void Promise.resolve(writeResult).catch(
+                (error: unknown) =>
+                {
+                    const pending = pendingRequests.get(id);
+
+                    if (!pending)
+                    {
+                        return;
+                    }
+
+                    pendingRequests.delete(id);
+                    pending.reject(
+                        toError(
+                            error,
+                            'Failed to send a worker request.',
+                        ),
+                    );
+                },
             );
-        }
-    });
-}
-
-function handleIPC(data: unknown): void
-{
-    const message = parseMessage(data);
-    if (!message) return;
-
-    if (message.type === 'response')
-    {
-        const response = message as IPCResponse;
-        const pending = pendingRequests.get(response.id);
-
-        if (!pending) return;
-
-        pendingRequests.delete(response.id);
-
-        if (response.error || response.success === false)
+        } catch (error: unknown)
         {
-            pending.reject(new Error(response.error || 'Worker request failed.'));
-        } else
-        {
-            pending.resolve(response.result);
-        }
+            const pending = pendingRequests.get(id);
 
-        return;
-    }
-
-    if (message.type === 'entries-updated')
-    {
-        void request<Entry[]>('list')
-            .then(dispatchEntries)
-            .catch((error: unknown) =>
+            if (pending)
             {
-                console.error('Failed to refresh entries after worker update:', error);
-            });
-    }
-}
-
-function startWorker(): void
-{
-    const bridge = window.bridge;
-
-    if (!bridge)
-    {
-        throw new Error('Desktop worker bridge is unavailable.');
-    }
-
-    if (workerStarted) return;
-
-    // Register listeners using the exact worker specifier.
-    unsubscribeIPC =
-        bridge.onWorkerIPC(WORKER_PATH, (data) =>
-        {
-            handleIPC(data);
-        }) || undefined;
-
-    bridge.onWorkerStderr?.(WORKER_PATH, (data) =>
-    {
-        console.error('[Autopass worker stderr]', data);
-    });
-
-    bridge.onWorkerStdout?.(WORKER_PATH, (data) =>
-    {
-        console.log('[Autopass worker stdout]', data);
-    });
-
-    bridge.onWorkerExit?.(WORKER_PATH, (data) =>
-    {
-        workerStarted = false;
-
-        const error = new Error(
-            `Autopass worker exited: ${ String(data) }`,
-        );
-
-        for (const pending of pendingRequests.values())
-        {
-            pending.reject(error);
+                pendingRequests.delete(id);
+                pending.reject(
+                    toError(
+                        error,
+                        'Failed to send a worker request.',
+                    ),
+                );
+            }
         }
-
-        pendingRequests.clear();
     });
-
-    // Start the worker only after registering its listeners.
-    workerStarted = true;
-
-    try
-    {
-        bridge.startWorker(WORKER_PATH);
-    } catch (error)
-    {
-        workerStarted = false;
-        unsubscribeIPC?.();
-        unsubscribeIPC = undefined;
-
-        throw error instanceof Error
-            ? error
-            : new Error('Failed to start the Autopass worker.');
-    }
 }
 
 function list(): Promise<Entry[]>
@@ -304,7 +441,7 @@ function remove(key: string): Promise<unknown>
 
 function onEntriesUpdated(
     callback: (entries: Entry[]) => void,
-): () => void
+): Unsubscribe
 {
     entriesListeners.add(callback);
 
@@ -316,21 +453,28 @@ function onEntriesUpdated(
 
 function initialize(): Promise<Entry[]>
 {
-    if (!startupPromise)
+    if (startupPromise)
     {
-        try
-        {
-            startWorker();
-            startupPromise = list();
-        } catch (error)
-        {
-            startupPromise = Promise.reject(
-                error instanceof Error ? error : new Error(String(error)),
-            );
-        }
+        return startupPromise;
     }
 
-    return startupPromise;
+    const startup = (async (): Promise<Entry[]> =>
+    {
+        await startWorker();
+        return list();
+    })();
+
+    startupPromise = startup;
+
+    void startup.catch(() =>
+    {
+        if (startupPromise === startup)
+        {
+            startupPromise = undefined;
+        }
+    });
+
+    return startup;
 }
 
 const api: AutopassAPI = {
@@ -346,8 +490,17 @@ const api: AutopassAPI = {
     onEntriesUpdated,
 };
 
-// Keep compatibility with existing code that accesses window.autopassAPI.
 window.autopassAPI = api;
 
-export { add, get, initialize, list, onEntriesUpdated, remove, update };
+export
+{
+    add,
+    get,
+    initialize,
+    list,
+    onEntriesUpdated,
+    remove,
+    update
+};
+
 export default api;

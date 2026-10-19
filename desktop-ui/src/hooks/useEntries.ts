@@ -1,5 +1,6 @@
 
 import { useCallback, useEffect, useState } from 'react';
+
 import
 {
     add as addEntry,
@@ -9,6 +10,7 @@ import
     remove as removeEntry,
     update as updateEntry,
 } from '../services/autopass-service';
+
 import type { Entry } from '../types/entry';
 
 interface UseEntriesResult
@@ -22,11 +24,15 @@ interface UseEntriesResult
     remove: (key: string) => Promise<void>;
 }
 
+type AsyncOperation = () => Promise<void>;
+
+const DEFAULT_ERROR_MESSAGE = 'An unexpected error occurred.';
+
 function getErrorMessage(error: unknown): string
 {
     return error instanceof Error
         ? error.message
-        : 'An unexpected error occurred.';
+        : DEFAULT_ERROR_MESSAGE;
 }
 
 export function useEntries(): UseEntriesResult
@@ -41,12 +47,11 @@ export function useEntries(): UseEntriesResult
         {
             setError(null);
 
-            const result = await list();
-            setEntries(result);
-        } catch (err)
+            const updatedEntries = await list();
+            setEntries(updatedEntries);
+        } catch (err: unknown)
         {
-            const message = getErrorMessage(err);
-            setError(message);
+            setError(getErrorMessage(err));
             throw err;
         }
     }, []);
@@ -57,11 +62,13 @@ export function useEntries(): UseEntriesResult
 
         const unsubscribe = onEntriesUpdated((updatedEntries) =>
         {
-            if (active)
+            if (!active)
             {
-                setEntries(updatedEntries);
-                setError(null);
+                return;
             }
+
+            setEntries(updatedEntries);
+            setError(null);
         });
 
         async function loadEntries(): Promise<void>
@@ -72,12 +79,14 @@ export function useEntries(): UseEntriesResult
             {
                 const initialEntries = await initialize();
 
-                if (active)
+                if (!active)
                 {
-                    setEntries(initialEntries);
-                    setError(null);
+                    return;
                 }
-            } catch (err)
+
+                setEntries(initialEntries);
+                setError(null);
+            } catch (err: unknown)
             {
                 if (active)
                 {
@@ -101,58 +110,51 @@ export function useEntries(): UseEntriesResult
         };
     }, []);
 
-    const add = useCallback(
-        async (key: string, value: string): Promise<void> =>
+    const runMutation = useCallback(
+        async (operation: AsyncOperation): Promise<void> =>
         {
             setError(null);
 
             try
+            {
+                await operation();
+            } catch (err: unknown)
+            {
+                setError(getErrorMessage(err));
+                throw err;
+            }
+        },
+        [],
+    );
+
+    const add = useCallback(
+        (key: string, value: string): Promise<void> =>
+            runMutation(async () =>
             {
                 await addEntry(key, value);
                 await refresh();
-            } catch (err)
-            {
-                setError(getErrorMessage(err));
-                throw err;
-            }
-        },
-        [refresh],
+            }),
+        [refresh, runMutation],
     );
 
     const update = useCallback(
-        async (key: string, value: string): Promise<void> =>
-        {
-            setError(null);
-
-            try
+        (key: string, value: string): Promise<void> =>
+            runMutation(async () =>
             {
                 await updateEntry(key, value);
                 await refresh();
-            } catch (err)
-            {
-                setError(getErrorMessage(err));
-                throw err;
-            }
-        },
-        [refresh],
+            }),
+        [refresh, runMutation],
     );
 
     const remove = useCallback(
-        async (key: string): Promise<void> =>
-        {
-            setError(null);
-
-            try
+        (key: string): Promise<void> =>
+            runMutation(async () =>
             {
                 await removeEntry(key);
                 await refresh();
-            } catch (err)
-            {
-                setError(getErrorMessage(err));
-                throw err;
-            }
-        },
-        [refresh],
+            }),
+        [refresh, runMutation],
     );
 
     return {

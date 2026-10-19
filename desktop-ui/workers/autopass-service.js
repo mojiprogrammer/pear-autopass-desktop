@@ -9,6 +9,8 @@ const Hyperswarm = require('hyperswarm')
 const goodbye = require('graceful-goodbye')
 const { isBareKit } = require('which-runtime')
 
+const REQUEST_TIMEOUT_MESSAGE = 'A request id and action are required.'
+
 const argv = (index) => Bare.argv[index + (isBareKit ? 0 : 2)]
 
 const updaterConfig = {
@@ -21,6 +23,7 @@ const updaterConfig = {
 }
 
 const pipe = new FramedStream(Bare.IPC)
+
 const storagePath = path.join(
   updaterConfig.dir,
   'pear-runtime',
@@ -39,15 +42,36 @@ function send(message) {
   pipe.write(JSON.stringify(message))
 }
 
+function getErrorMessage(error) {
+  return error instanceof Error
+    ? error.message
+    : 'Unexpected worker error'
+}
+
+function getEntryKey(payload) {
+  const key = payload?.key
+
+  if (typeof key !== 'string' || !key.trim()) {
+    throw new Error('Entry key is required.')
+  }
+
+  return key.trim()
+}
+
+function getEntryValue(payload) {
+  if (typeof payload?.value !== 'string') {
+    throw new Error('Entry value must be a string.')
+  }
+
+  return payload.value
+}
+
 async function initialize() {
   if (initialized) return
-
   if (initializationPromise) return initializationPromise
 
   initializationPromise = (async () => {
-   
     await store.ready()
-
     await pear.ready()
 
     const pass = new Autopass(store)
@@ -67,10 +91,15 @@ async function initialize() {
   try {
     await initializationPromise
   } catch (error) {
-    initializationPromise = null
+    initializationPromise = undefined
     initialized = false
     autopass = undefined
-    console.error('[Autopass worker] Initialization failed:', error)
+
+    console.error(
+      '[Autopass worker] Initialization failed:',
+      error
+    )
+
     throw error
   }
 }
@@ -91,10 +120,11 @@ async function listEntries() {
 }
 
 async function handleRequest(request) {
-  const { id, action, payload = {} } = request
+  const { id, action, payload = {} } = request ?? {}
+
   try {
     if (!id || typeof action !== 'string') {
-      throw new Error('A request id and action are required.')
+      throw new Error(REQUEST_TIMEOUT_MESSAGE)
     }
 
     await initialize()
@@ -106,83 +136,76 @@ async function handleRequest(request) {
         result = await listEntries()
         break
 
-      case 'get':
-        if (typeof payload.key !== 'string' || !payload.key.trim()) {
-          throw new Error('Entry key is required.')
-        }
-
-        result = await autopass.get(payload.key)
+      case 'get': {
+        const key = getEntryKey(payload)
+        result = await autopass.get(key)
         break
+      }
 
-  case 'update': {
-  const key = String(payload.key ?? '').trim()
-  const value = payload.value
+      case 'add': {
+        const key = getEntryKey(payload)
+        const value = getEntryValue(payload)
 
-  if (!key) {
-    throw new Error('Entry key is required.')
-  }
+        await autopass.add(key, value)
 
-  if (typeof value !== 'string') {
-    throw new Error('Entry content must be a string.')
-  }
-
-  const existing = await autopass.get(key)
-
-  if (existing === null) {
-    throw new Error(`Entry "${key}" does not exist.`)
-  }
-
-  await autopass.add(key, value)
-
-  result = { key, value }
-  break
-}
-
-      case 'add':
-        if (typeof payload.key !== 'string' || !payload.key.trim()) {
-          throw new Error('Entry key is required.')
-        }
-
-        if (typeof payload.value !== 'string') {
-          throw new Error('Entry value must be a string.')
-        }
-
-        await autopass.add(payload.key.trim(), payload.value)
-        result = { key: payload.key.trim() }
+        result = { key }
         break
+      }
 
-      case 'remove':
-        if (typeof payload.key !== 'string' || !payload.key.trim()) {
-          throw new Error('Entry key is required.')
+      case 'update': {
+        const key = getEntryKey(payload)
+        const value = getEntryValue(payload)
+        const existing = await autopass.get(key)
+
+        if (existing === null) {
+          throw new Error(`Entry "${key}" does not exist.`)
         }
 
-        await autopass.remove(payload.key)
-        result = { key: payload.key }
+        // Preserve the current behavior until the Autopass API's
+        // update/overwrite semantics have been verified.
+        await autopass.add(key, value)
+
+        result = { key, value }
         break
+      }
+
+      case 'remove': {
+        const key = getEntryKey(payload)
+
+        await autopass.remove(key)
+
+        result = { key }
+        break
+      }
 
       default:
         throw new Error(`Unsupported action: ${action}`)
     }
 
-    send({ type: 'response', id, success: true, result })
+    send({
+      type: 'response',
+      id,
+      success: true,
+      result
+    })
   } catch (error) {
     send({
       type: 'response',
       id,
       success: false,
-      error: error instanceof Error
-        ? error.message
-        : 'Unexpected worker error'
+      error: getErrorMessage(error)
     })
   }
 }
 
 pear.updater.on('error', (error) => {
-  console.error('Pear updater error:', error)
+  console.error('[Pear updater] Error:', error)
 })
 
-if (updaterConfig.updates !== false) {
-  swarm.on('connection', (connection) => store.replicate(connection))
+if (updaterConfig.updates) {
+  swarm.on('connection', (connection) => {
+    store.replicate(connection)
+  })
 
   swarm.join(pear.updater.drive.core.discoveryKey, {
     client: true,
@@ -190,21 +213,24 @@ if (updaterConfig.updates !== false) {
   })
 }
 
-// Keep the existing Pear updater messages compatible with the renderer.
-pear.updater.on('updating', () => pipe.write('updating'))
-pear.updater.on('updated', () => pipe.write('updated'))
+pear.updater.on('updating', () => {
+  pipe.write('updating')
+})
+
+pear.updater.on('updated', () => {
+  pipe.write('updated')
+})
 
 pipe.on('data', (data) => {
   const message = data.toString()
 
-  // Preserve the existing Pear update command.
   if (message === 'pear:applyUpdate') {
-    ;(async () => {
+    void (async () => {
       await pear.ready()
       await pear.updater.applyUpdate()
       pipe.write('pear:updateApplied')
     })().catch((error) => {
-      console.error('Update failed:', error)
+      console.error('[Pear updater] Failed to apply update:', error)
     })
 
     return
@@ -215,21 +241,33 @@ pipe.on('data', (data) => {
   try {
     request = JSON.parse(message)
   } catch {
-    // Ignore other plain-text messages, such as the old greeting.
+    // Ignore plain-text messages that are not worker requests.
     return
   }
 
-  if (request && request.action) {
-    handleRequest(request)
+  if (request && typeof request === 'object' && request.action) {
+    void handleRequest(request)
   }
 })
 
+async function closeResource(name, close) {
+  try {
+    await close()
+  } catch (error) {
+    console.error(`[Autopass worker] Failed to close ${name}:`, error)
+  }
+}
+
 goodbye(async () => {
-  if (autopass) await autopass.close()
-  await swarm.destroy()
-  await pear.close()
-  await store.close()
+  initialized = false
+
+  if (autopass) {
+    await closeResource('Autopass', () => autopass.close())
+  }
+
+  await closeResource('Hyperswarm', () => swarm.destroy())
+  await closeResource('Pear runtime', () => pear.close())
+  await closeResource('Corestore', () => store.close())
 })
 
-console.log('Pear AutoPass Desktop worker started')
-
+console.log('[Autopass worker] Started')

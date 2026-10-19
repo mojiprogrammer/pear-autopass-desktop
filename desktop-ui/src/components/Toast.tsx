@@ -1,11 +1,10 @@
 
-
-import { useEffect } from 'react';
+import { useEffect } from "react";
 
 export interface ToastMessage {
   id: number;
   message: string;
-  type: 'success' | 'error' | 'info';
+  type: "success" | "error" | "info";
 }
 
 interface ToastProps {
@@ -13,40 +12,49 @@ interface ToastProps {
   onDismiss: () => void;
 }
 
-const TOAST_DURATION = 4000;
+const TOAST_DURATION_MS = 4_000;
+
+const TOAST_ICONS: Record<ToastMessage["type"], string> = {
+  success: "✓",
+  error: "!",
+  info: "i",
+};
 
 export default function Toast({ toast, onDismiss }: ToastProps) {
   useEffect(() => {
-    if (!toast) return;
+    if (!toast) {
+      return;
+    }
 
-    const timeoutId = window.setTimeout(onDismiss, TOAST_DURATION);
+    const timeoutId = window.setTimeout(
+      onDismiss,
+      TOAST_DURATION_MS,
+    );
 
     return () => {
       window.clearTimeout(timeoutId);
     };
   }, [toast?.id, onDismiss]);
 
-  if (!toast) return null;
+  if (!toast) {
+    return null;
+  }
 
-  const icon = {
-    success: '✓',
-    error: '!',
-    info: 'i',
-  }[toast.type];
+  const isError = toast.type === "error";
 
   return (
     <div
       className="toast-container"
-      aria-live={toast.type === 'error' ? 'assertive' : 'polite'}
+      aria-live={isError ? "assertive" : "polite"}
       aria-atomic="true"
     >
       <div
         key={toast.id}
         className={`toast toast-${toast.type}`}
-        role={toast.type === 'error' ? 'alert' : 'status'}
+        role={isError ? "alert" : "status"}
       >
         <span className="toast-icon" aria-hidden="true">
-          {icon}
+          {TOAST_ICONS[toast.type]}
         </span>
 
         <span className="toast-message">{toast.message}</span>
@@ -67,4 +75,3 @@ export default function Toast({ toast, onDismiss }: ToastProps) {
     </div>
   );
 }
-

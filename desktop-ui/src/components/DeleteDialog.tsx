@@ -1,5 +1,5 @@
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from "react";
 
 interface DeleteDialogProps {
   open: boolean;
@@ -25,24 +25,38 @@ export default function DeleteDialog({
       return;
     }
 
-    requestAnimationFrame(() => cancelButtonRef.current?.focus());
+    const frameId = window.requestAnimationFrame(() => {
+      cancelButtonRef.current?.focus();
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+    };
   }, [open]);
 
-  if (!open) return null;
+  const handleConfirm = useCallback(async () => {
+    if (deleting) {
+      return;
+    }
 
-  async function handleConfirm() {
     setDeleting(true);
     setError(null);
 
     try {
       await onConfirm();
-    } catch (err) {
+    } catch (confirmError: unknown) {
       setError(
-        err instanceof Error ? err.message : 'Could not delete this entry.',
+        confirmError instanceof Error
+          ? confirmError.message
+          : "Could not delete this entry.",
       );
     } finally {
       setDeleting(false);
     }
+  }, [deleting, onConfirm]);
+
+  if (!open) {
+    return null;
   }
 
   return (
@@ -50,7 +64,10 @@ export default function DeleteDialog({
       className="dialog-backdrop"
       role="presentation"
       onMouseDown={(event) => {
-        if (event.target === event.currentTarget && !deleting) {
+        if (
+          event.target === event.currentTarget &&
+          !deleting
+        ) {
           onCancel();
         }
       }}
@@ -76,16 +93,18 @@ export default function DeleteDialog({
           </button>
         </header>
 
-        <p id="delete-dialog-description">
-          Are you sure you want to delete <strong>{entryTitle}</strong>? This
-          action cannot be undone.
-        </p>
-
-        {error && (
-          <p className="form-error" role="alert">
-            {error}
+        <div className="dialog-body">
+          <p id="delete-dialog-description">
+            Are you sure you want to delete{" "}
+            <strong>{entryTitle}</strong>? This action cannot be undone.
           </p>
-        )}
+
+          {error && (
+            <p className="form-error" role="alert">
+              {error}
+            </p>
+          )}
+        </div>
 
         <footer className="dialog-footer">
           <button
@@ -104,7 +123,7 @@ export default function DeleteDialog({
             disabled={deleting}
             onClick={() => void handleConfirm()}
           >
-            {deleting ? 'Deleting…' : 'Delete entry'}
+            {deleting ? "Deleting…" : "Delete entry"}
           </button>
         </footer>
       </section>
