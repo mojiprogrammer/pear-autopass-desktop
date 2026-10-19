@@ -131,7 +131,7 @@ async function createWindow() {
 
   if (devServerUrl) {
     await win.loadURL(devServerUrl);
-    win.webContents.openDevTools();
+    // win.webContents.openDevTools();
     return;
   }
 

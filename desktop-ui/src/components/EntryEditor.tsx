@@ -262,7 +262,7 @@ export default function EntryEditor({
           </div>
 
           {error && (
-            <p className="form-error" role="alert">
+            <p className="form-error validation-shake" role="alert">
               {error}
             </p>
           )}

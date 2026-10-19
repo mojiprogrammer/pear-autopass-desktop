@@ -276,7 +276,7 @@ export default function App() {
           >
             <img
               className="brand-mark"
-              src="../assets/images/logo.svg"
+              src="../src/assets/images/logo.svg"
               alt=""
             />
 

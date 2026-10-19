@@ -45,26 +45,22 @@ async function initialize() {
   if (initializationPromise) return initializationPromise
 
   initializationPromise = (async () => {
-    console.log('[Autopass worker] Waiting for Corestore...')
+   
     await store.ready()
 
-    console.log('[Autopass worker] Waiting for Pear runtime...')
     await pear.ready()
 
-    console.log('[Autopass worker] Initializing Autopass...')
     const pass = new Autopass(store)
     await pass.ready()
 
     autopass = pass
 
     autopass.on('update', () => {
-      console.log('[Autopass worker] Entries updated')
       send({ type: 'entries-updated' })
     })
 
     initialized = true
 
-    console.log('[Autopass worker] Ready')
     send({ type: 'ready' })
   })()
 
@@ -96,7 +92,6 @@ async function listEntries() {
 
 async function handleRequest(request) {
   const { id, action, payload = {} } = request
-console.log('[Autopass worker] Request received:', { id, action })
   try {
     if (!id || typeof action !== 'string') {
       throw new Error('A request id and action are required.')
